@@ -16,7 +16,7 @@ int main(int argc, char * argv[]) {
     
     int stopSize = simulator.busGenerator->kStop;
     double warmDuration = 3600.0 * 2;
-    double peakDuration = 3600.0 * 3;
+    double peakDuration = 3600.0 * 4;
     //    double warmDuration = 3600.0 * 0.25;
     //    double peakDuration = 3600.0 * 0.25;
     double warmTotalPaxRate = 100.0; // pax/hr
