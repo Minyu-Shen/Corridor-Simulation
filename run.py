@@ -22,11 +22,11 @@ output = open("../results/temp.csv", 'w')
 # tt_cv = 0 inf capacity case
 kStop = 18
 kBerth = 3
-tt_mean = 20.0
-for bus_demand in [100,200,300]:
-    for pax_demand in [400,800,1200,1600]: # pax/hr
-        for bus_arrival_cv in [0.2,0.6]: # buses/hr
-            for tt_cv in [0,0.4]:
+tt_mean = 60.0
+for bus_demand in [100]:
+    for pax_demand in [300,400,500,600,700,800,900,1000]: # pax/hr
+        for bus_arrival_cv in [0.6]: # buses/hr
+            for tt_cv in [0]:
                 for mode in [0,1,2,3,4]:
                     for kRoute in [3]:
                         args = [kBerth, kBerth, kRoute, tt_mean, bus_demand, pax_demand, bus_arrival_cv, tt_cv, mode, kStop]

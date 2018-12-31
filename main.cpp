@@ -16,7 +16,7 @@ int main(int argc, char * argv[]) {
     
     int stopSize = simulator.busGenerator->kStop;
     double warmDuration = 3600.0 * 2;
-    double peakDuration = 3600.0 * 4;
+    double peakDuration = 3600.0 * 5;
     //    double warmDuration = 3600.0 * 0.25;
     //    double peakDuration = 3600.0 * 0.25;
     double warmTotalPaxRate = 100.0; // pax/hr
@@ -27,7 +27,7 @@ int main(int argc, char * argv[]) {
 //    std::cout << elapsed_secs << std::endl;
     
     /* ---------- test runs ---------- */
-    double testRuns = 100;
+    double testRuns = 200;
     std::vector<double> stopDelayEach (stopSize+1);
     std::vector<double> stopServiceEach (stopSize);
     // key is sample no, vector contains the sampels
