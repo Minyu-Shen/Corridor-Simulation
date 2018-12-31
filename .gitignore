@@ -5,6 +5,5 @@
 # And all the file types you're interested in.
 !*.hpp
 !*.cpp
-!*.py
 !makefile
 !.gitignore
