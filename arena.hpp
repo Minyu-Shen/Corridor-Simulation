@@ -75,6 +75,10 @@ void computeMeanDelay(vd &stopDelays, vd &stopServices, std::vector<std::shared_
 
 void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map);
 
+// calculate the bunching RMSE (wrong version~)
+//void computeBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow, double travelTime, double warmupTime);
+
+void calculateBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow);
 
 void writeJsonToFile(nlohmann::json js);
 #endif /* arena_hpp */

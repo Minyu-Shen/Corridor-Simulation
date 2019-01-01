@@ -28,9 +28,11 @@ Bus::Bus(int id, int bl, double cpt, double bd_rt, double al_rt, double al_prob,
         delayAtEachStop.insert(std::make_pair(k, 0.0));
         delayOnEachLink.insert(std::make_pair(k, 0.0));
         serviceTimeAtEachStop.insert(std::make_pair(k, 0.0));
+        arrivalTimeEachStop.insert(std::make_pair(k, 0.0));
     }
     // -1 means the consolidation stop
     delayAtEachStop.insert(std::make_pair(-1, 0.0));
+    arrivalTimeEachStop.insert(std::make_pair(-1, 0.0)); // -1 means the departure time from consolidation stop
     totalTimeInService = 0.0;
     totalDelays = 0.0;
 }

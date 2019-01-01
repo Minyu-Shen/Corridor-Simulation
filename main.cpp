@@ -15,8 +15,8 @@ int main(int argc, char * argv[]) {
     Corridor simulator = SimulationConfig::CorridorBuilder(config);
     
     int stopSize = simulator.busGenerator->kStop;
-    double warmDuration = 3600.0 * 2;
-    double peakDuration = 3600.0 * 5;
+    double warmDuration = 3600.0 * 1.5;
+    double peakDuration = 3600.0 * 5.5;
     //    double warmDuration = 3600.0 * 0.25;
     //    double peakDuration = 3600.0 * 0.25;
     double warmTotalPaxRate = 100.0; // pax/hr
@@ -30,6 +30,7 @@ int main(int argc, char * argv[]) {
     double testRuns = 200;
     std::vector<double> stopDelayEach (stopSize+1);
     std::vector<double> stopServiceEach (stopSize);
+    std::vector<double> stopBunchingEach (stopSize);
     // key is sample no, vector contains the sampels
     // to determine the needed simulation rounds
     std::map<int, std::vector<double>> estimatingRunsMap;
@@ -52,10 +53,18 @@ int main(int argc, char * argv[]) {
         /* stop delay and service time collections */
         std::vector<double> stopDelays (stopSize+1);
         std::vector<double> stopServices (stopSize);
+        std::vector<double> stopBunchingRMSE (stopSize);
         computeMeanDelay(stopDelays, stopServices, simulator.busGenerator->peakBusVec);
         estimatingRunsMap.insert(std::make_pair(r, stopDelays));
         addVector(stopDelayEach, stopDelays);
         addVector(stopServiceEach, stopServices);
+        
+        /* bunching RMSE estimations */
+        calculateBunchingRMSE(stopBunchingRMSE, simulator.busGenerator->peakBusVec, std::stod(argv[5])/std::stoi(argv[3]));
+        addVector(stopBunchingEach, stopBunchingRMSE);
+        
+//        computeBunchingRMSE(stopBunchingRMSE, simulator.busGenerator->peakBusVec, std::stod(argv[5])/std::stoi(argv[3]), std::stod(argv[4]), warmDuration*3600);
+        
         simulator.reset();
 //        writeJsonToFile(simulator.jsObject);
 //        std::cout << r << std::endl;
@@ -82,10 +91,14 @@ int main(int argc, char * argv[]) {
         /* stop and link delay collections */
         std::vector<double> stopDelays (stopSize+1);
         std::vector<double> stopServices (stopSize);
+        std::vector<double> stopBunchingRMSE (stopSize);
         //        std::vector<double> stopDelays = simulator.collectDelayAsArray();
         computeMeanDelay(stopDelays, stopServices, simulator.busGenerator->peakBusVec);
         addVector(stopDelayEach, stopDelays);
         addVector(stopServiceEach, stopServices);
+        calculateBunchingRMSE(stopBunchingRMSE, simulator.busGenerator->peakBusVec, std::stod(argv[5])/std::stoi(argv[3]));
+        addVector(stopBunchingEach, stopBunchingRMSE);
+        
         simulator.reset();
     }
 
@@ -97,22 +110,30 @@ int main(int argc, char * argv[]) {
     }
     multiplyVector(stopDelayEach, 1.0/60.0/totalRuns);
     multiplyVector(stopServiceEach, 1.0/60.0/totalRuns);
+    multiplyVector(stopBunchingEach, 1.0/60.0/totalRuns);
 
     // shout out to the python console and log file
 
     double delayCumSum = 0.0;
     double servTimeCumSum = 0.0;
+    double bunchingRMSE = 0.0;
     for (int s = 0; s < stopSize+1; s++) {
         for(int i = 1; i < argc-1; ++i) std::cout << argv[i] << " ";
         std::cout << s << " ";
 
         // last element is the delay in the consolidation stop
-        if (s == 0) delayCumSum += stopDelayEach[stopSize];
-        else delayCumSum += stopDelayEach[s-1];
+        if (s == 0){
+            delayCumSum += stopDelayEach[stopSize];
+            bunchingRMSE = 0.0;
+        }else{
+            delayCumSum += stopDelayEach[s-1];
+            bunchingRMSE = stopBunchingEach[s-1];
+        }
+
         if (s != 0) {
             servTimeCumSum += stopServiceEach[s-1];
         }
-        std::cout << delayCumSum << " " << servTimeCumSum << std::endl;
+        std::cout << delayCumSum << " " << servTimeCumSum << " " << bunchingRMSE << std::endl;
     }
 }
 

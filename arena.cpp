@@ -295,6 +295,65 @@ void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map){
     }
 }
 
+//void computeBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow, double travelTime, double warmupTime){
+//    int stopSize = int(stopRMSE.size());
+//    double lostTime = 10.0;
+//    double boardingRate = 4.0;
+//    // calculate the first peak bus schedule arrival
+//    double headway = 3600/busFlow; //in seconds
+//    double firstScheduleArrivalTime = ceil(warmupTime/headway) * headway;
+//
+//    // only calculate one specific line bunching rate
+//    int count = 0;
+//    for (auto &bus: busPtrs){
+//        if (bus->busLine == 0) {
+//            for (int s = 0; s < stopSize; s++) {
+//                int busRuns = bus->busID;
+//                double scheduledArrivalTime = 0.0;
+//                if (s == 0) {
+//                    scheduledArrivalTime = firstScheduleArrivalTime + busRuns*headway + travelTime;
+//                }else{
+//                    scheduledArrivalTime = firstScheduleArrivalTime + busRuns*headway + s*(lostTime+boardingRate*headway+travelTime);
+//                }
+//                double actualArriveTime = bus->arrivalTimeEachStop[s];
+//                stopRMSE[s] += (actualArriveTime-scheduledArrivalTime) * (actualArriveTime-scheduledArrivalTime);
+//            }
+//            count ++;
+//        }
+//    }
+//    for (int s = 0; s < stopSize; s++) {
+//        stopRMSE[s] = sqrt(stopRMSE[s] / count);
+//    }
+//}
+
+void calculateBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow){
+    // first calculate the actual arrival headway
+    // i.e., h_{n,s} = a_{n,s} - a_{n-1,s}
+    int stopSize = int(stopRMSE.size());
+    double headway = 3600/busFlow; //in seconds
+    for (int s = 0; s < stopSize; s++) {
+        std::vector<double> actualArrivals;
+        for (auto &bus: busPtrs){
+            // only calculate one specific line's bunching
+            if (bus->busLine == 0) {
+                actualArrivals.push_back(bus->arrivalTimeEachStop[s]);
+            }
+        }
+        double squareErrorSum = 0.0;
+        int samples = int(actualArrivals.size());
+        std::sort(actualArrivals.begin(), actualArrivals.end());
+        for (int is = 0; is < samples-1; is++) {
+            if (actualArrivals[is+1] == 0 || actualArrivals[is] == 0) {
+                // some buses not reaching some downstream stops
+                // do not count
+            }else{
+                squareErrorSum += pow(actualArrivals[is+1] - actualArrivals[is] - headway, 2);
+            }
+        }
+        stopRMSE[s] = sqrt(squareErrorSum / (samples-1));
+    }
+    
+}
 
 void writeJsonToFile(nlohmann::json js){
     std::string s = js.dump();

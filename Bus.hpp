@@ -24,18 +24,19 @@ public:
     // delay time total
     double totalDelays;
     
-    //service time at each stop
-    std::map<int, double> serviceTimeAtEachStop;
-    
     // enter in peak period or not?
     bool isPeak;
     
     // bus id
     int busID;
     
-    // for stats
+    // delay stats
     std::map<int, double> delayAtEachStop; //-1 is the consolidation
     std::map<int, double> delayOnEachLink;
+    //service time at each stop
+    std::map<int, double> serviceTimeAtEachStop;
+    // bus arrival time stats
+    std::map<int, double> arrivalTimeEachStop;
     
     // passenger queues on the bus
     // only for common line case, currently no use.
@@ -66,7 +67,7 @@ public:
     double alightProbability;
     
     // remaining static service time
-    double staticServiceTime;
+//    double staticServiceTime;
     
     // average speed, determined after entering the link
     double avgSpeedOnCurrentLink;

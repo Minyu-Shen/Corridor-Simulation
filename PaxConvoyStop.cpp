@@ -44,6 +44,8 @@ void PaxConvoyStop::paxArrival(){
 void PaxConvoyStop::convoyArrival(std::shared_ptr<Convoy> convoy){
     // add to the waitZone first, and then check if it can proceed to the berth
     for (auto &bus: convoy->buses){
+        // record the arrival time of buses (all are equal)
+        bus->arrivalTimeEachStop[stopID] = simTimeNow;
         bus->determineAlightingPaxNo(bus->busLine);
     }
     
@@ -83,7 +85,7 @@ void PaxConvoyStop::pushConvoyToBerth(std::shared_ptr<Convoy> convoy){
     convoysInWaitzone.pop_front();
     double reactionTime = 0; // for future ...
     for (int c=0; c<berthSize; c++) {
-        convoyInStop->buses[c]->lostTime = 3.0 + reactionTime*(berthSize-c-1);
+        convoyInStop->buses[c]->lostTime = 10.0 + reactionTime*(berthSize-c-1);
     }
 }
 

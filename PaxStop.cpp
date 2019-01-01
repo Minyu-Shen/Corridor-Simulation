@@ -66,6 +66,9 @@ void PaxStop::paxArrival(){
 
 // 1. buses arrivals, from last link
 void PaxStop::busArrival(std::shared_ptr<Bus> bus){
+    // record the bus arrival time here
+    bus->arrivalTimeEachStop[stopID] = simTimeNow;
+    
     // set the "alightingPaxEachStop"
     bus->determineAlightingPaxNo(bus->busLine);
     // check whether need to alight
@@ -77,9 +80,6 @@ void PaxStop::busArrival(std::shared_ptr<Bus> bus){
         
     } else { // no pax wants to alight
         // check if there is a same line serving or waiting in the stop
-        
-//        std::cout << "no alighting" << std::endl;
-        
         bool isFindSameLine = false;
         for (auto &busInStop: busesInStop){
             if (busInStop == nullptr) continue;
@@ -183,7 +183,7 @@ void PaxStop::allocationEntering(){
 
 
 void PaxStop::pushBusToBerth(std::shared_ptr<Bus> bus, int bth_no){
-    bus->lostTime = 3.0;
+    bus->lostTime = 10.0;
     busesInStop[bth_no] = bus;
     busesInWaitzone.pop_front();
     servicingMark[bth_no] = true;
