@@ -136,7 +136,7 @@ int main(int argc, char * argv[]) {
     double servTimeCumSum = 0.0;
     double bunchingRMSE = 0.0;
     for (int s = 0; s < stopSize+1; s++) {
-        for(int i = 1; i < argc-1; ++i) std::cout << argv[i] << " ";
+        for(int i = 1; i < argc; ++i) std::cout << argv[i] << " ";
         std::cout << s << " ";
 
         // last element is the delay in the consolidation stop
