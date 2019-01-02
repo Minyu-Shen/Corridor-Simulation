@@ -85,7 +85,7 @@ void PaxConvoyStop::pushConvoyToBerth(std::shared_ptr<Convoy> convoy){
     convoysInWaitzone.pop_front();
     double reactionTime = 0; // for future ...
     for (int c=0; c<berthSize; c++) {
-        convoyInStop->buses[c]->lostTime = 10.0 + reactionTime*(berthSize-c-1);
+        convoyInStop->buses[c]->lostTime = 0.0 + reactionTime*(berthSize-c-1);
     }
 }
 
