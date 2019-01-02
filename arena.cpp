@@ -333,10 +333,13 @@ void calculateBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPt
     double headway = 3600/busFlow; //in seconds
     for (int s = 0; s < stopSize; s++) {
         std::vector<double> actualArrivals;
+        
         for (auto &bus: busPtrs){
             // only calculate one specific line's bunching
             if (bus->busLine == 0) {
-                actualArrivals.push_back(bus->arrivalTimeEachStop[s]);
+                if (bus->arrivalTimeEachStop[s] !=0 ) { //0 means not reaching the downstream stop
+                    actualArrivals.push_back(bus->arrivalTimeEachStop[s]);
+                }
             }
         }
         double squareErrorSum = 0.0;
