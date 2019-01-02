@@ -31,6 +31,9 @@ public:
     int busID;
     
     // delay stats
+    std::map<int, double> entryDelayEachStop;
+    std::map<int, double> exitDelayEachStop;
+    
     std::map<int, double> delayAtEachStop; //-1 is the consolidation
     std::map<int, double> delayOnEachLink;
     //service time at each stop

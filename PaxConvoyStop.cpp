@@ -192,38 +192,24 @@ void PaxConvoyStop::updateBusStats(){
 //    }
 //    stopDelays += blockCount * 1.0;
     
+    
+    // entry delays
     for (auto convoy: convoysInWaitzone){
         for (auto &bus: convoy->buses){
             if (bus->isPeak) {
                 bus->delayAtEachStop[stopID] += 1.0;
-//                bus->totalDelays += 1.0;
-                // peakCount ++;
+                bus->entryDelayEachStop[stopID] += 1.0;
             }
         }
     }
-    
-//    for (int i = int(convoysInWaitzone.size())-1; i >= 0; i--) {
-//        auto convoy = convoysInWaitzone[i];
-////        int peakCount = 0;
-//        for (auto &bus: convoy->buses){
-//            if (bus->isPeak) {
-//                bus->delayAtEachStop[stopID] += 1.0;
-//                bus->totalDelays += 1.0;
-////                peakCount ++;
-//            }
-//        }
-////        if (peakCount == convoy->convoySize) break;
-//    }
-    
-    
+    // "exiting" (wait for other buses in the convoy) delays
     if (convoyInStop != nullptr) {
         for (auto &bus: convoyInStop->buses){
             if (bus->isPeak) {
                 if (boardingAlightingCompleted(bus)) {
-//                    bus->totalDelays += 1.0;
+                    bus->exitDelayEachStop[stopID] += 1.0;
                     bus->delayAtEachStop[stopID] += 1.0;
                 }else{
-//                    bus->totalTimeInService += 1.0;
                     bus->serviceTimeAtEachStop[stopID] += 1.0;
                 }
             }

@@ -228,7 +228,7 @@ int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap){
 //    return maxRuns;
 }
 
-void computeMeanDelay(vd &stopDelays, vd &stopServices, std::vector<std::shared_ptr<Bus>> busPtrs){
+void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd &stopExitDelays, std::vector<std::shared_ptr<Bus>> busPtrs){
     
     int stopSize = int(stopServices.size());
     
@@ -254,6 +254,9 @@ void computeMeanDelay(vd &stopDelays, vd &stopServices, std::vector<std::shared_
 //            double linkDelay = bus->delayOnEachLink[s];
             stopDelays[s] += bus->delayAtEachStop[s];
             stopServices[s] += bus->serviceTimeAtEachStop[s];
+            stopEntryDelays[s] += bus->entryDelayEachStop[s];
+            stopExitDelays[s] += bus->exitDelayEachStop[s];
+            
             stopSamples[s] += 1;
 //            linkDelays[s] += linkDelay;
 //            linkSamples[s] += 1;
@@ -268,9 +271,13 @@ void computeMeanDelay(vd &stopDelays, vd &stopServices, std::vector<std::shared_
         if (stopSamples[s] > 0) {
             stopDelays[s] = stopDelays[s] / stopSamples[s];
             stopServices[s] = stopServices[s] / stopSamples[s];
+            stopEntryDelays[s] = stopEntryDelays[s] / stopSamples[s];
+            stopExitDelays[s] = stopExitDelays[s] / stopSamples[s];
         }else{
             stopDelays[s] = 0.0;
             stopServices[s] = 0.0;
+            stopEntryDelays[s] = 0.0;
+            stopExitDelays[s] = 0.0;
         }
 //        if (linkSamples[s] > 0) {
 //            linkDelays[s] = linkDelays[s] / linkSamples[s];
@@ -337,7 +344,7 @@ void calculateBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPt
         for (auto &bus: busPtrs){
             // only calculate one specific line's bunching
             if (bus->busLine == 0) {
-                if (bus->arrivalTimeEachStop[s] !=0 ) { //0 means not reaching the downstream stop
+                if (bus->arrivalTimeEachStop[s] > 0 ) { //0 means not reaching the downstream stop
                     actualArrivals.push_back(bus->arrivalTimeEachStop[s]);
                 }
             }

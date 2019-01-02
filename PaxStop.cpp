@@ -218,9 +218,8 @@ void PaxStop::leaving(){
         if (busesInStop[i] == nullptr) continue;
         if (boardingAlightingCompleted(busesInStop[i])) {
             if (canLeave(i)) {
-//                std::cout << busesInStop[i]->busID << " leaves stop "<< stopID << " at " << simTimeNow << std::endl;
                 if (nextLink == nullptr) { // finally finished!
-//                    std::cout << busesInStop[i]->busID << " bus's leaving corridor : " << simTimeNow << std::endl;
+                    
                 } else{
                     nextLink->busEnteringLink(busesInStop[i]);
                 }
@@ -296,12 +295,13 @@ void PaxStop::updateBusStats(){
     for (int i = 0; i < int(busesInStop.size()); i++) {
         auto bus = busesInStop[i];
         if (bus == nullptr) continue;
-        if (busesInStop[i]->isPeak) {
-            if (!canLeave(i)) {
-                bus->delayAtEachStop[stopID] += 1.0;
-//                bus->totalDelays += 1.0;
-            }else{ // for recording effective service time
-//                bus->totalTimeInService += 1.0;
+        if (bus->isPeak) {
+            if (boardingAlightingCompleted(bus)) {
+                if (!canLeave(i)) {
+                    bus->delayAtEachStop[stopID] += 1.0;
+                    bus->exitDelayEachStop[stopID] += 1.0;
+                }
+            }else{ // still serving, for recording effective service time
                 bus->serviceTimeAtEachStop[stopID] += 1.0;
             }
         }
@@ -311,7 +311,7 @@ void PaxStop::updateBusStats(){
         auto bus = busesInWaitzone[i];
         if (bus->isPeak) {
             bus->delayAtEachStop[stopID] += 1.0;
-//            bus->totalDelays += 1.0;
+            bus->entryDelayEachStop[stopID] += 1.0;
         }
     }
 }

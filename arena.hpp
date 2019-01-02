@@ -71,7 +71,7 @@ double calVariance(const std::vector<double> &vec);
 // calculate number runs needed
 int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap);
 
-void computeMeanDelay(vd &stopDelays, vd &stopServices, std::vector<std::shared_ptr<Bus>> busPtrs);
+void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd &stopExitDelays, std::vector<std::shared_ptr<Bus>> busPtrs);
 
 void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map);
 
