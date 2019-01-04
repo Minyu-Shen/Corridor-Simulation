@@ -43,6 +43,9 @@ SimulationConfig::SimulationConfig(int argc, char *argv[]){
     
     // capacity
     double argv_11 = std::stod(argv[11]);
+    
+    // alighting prob
+    double argv_12 = std::stod(argv[12]);
 
     
 //    int argv_1 = 3, argv_2 = 3, argv_3 = 3, argv_9 = 0, argv_10 = 18;
@@ -52,7 +55,7 @@ SimulationConfig::SimulationConfig(int argc, char *argv[]){
     kLine = argv_3; totalPaxArrRate = argv_6/3600.0; // seconds/bus
     meanHeadway = 1 / (argv_5 / 3600.0 / kLine); // seconds/bus
     cvHeadway = argv_7; travelMean = argv_4; travelStd = argv_8*argv_4;
-    capacity = argv_11;
+    capacity = argv_11; alightingProb = argv_12;
     
     //enum class DispatchMode{Normal, Convoy, Serial, SerialFixHeadway, ConvoyFixHeadway, SingleNormal};
     switch (argv_9) {
@@ -74,7 +77,7 @@ SimulationConfig::SimulationConfig(int argc, char *argv[]){
     
     // hyper paras
     boardingRate = 1/4.0; alightingRate = 1/2.0;
-    alightingProb = 0.1;
+//    alightingProb = 0.1;
 //    capacity = 1000000.0;
     initialPax = 30.0;
 }
