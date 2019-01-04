@@ -74,7 +74,7 @@ SimulationConfig::SimulationConfig(int argc, char *argv[]){
     
     // hyper paras
     boardingRate = 1/4.0; alightingRate = 1/2.0;
-    alightingProb = 0.3;
+    alightingProb = 0.1;
 //    capacity = 1000000.0;
     initialPax = 30.0;
 }

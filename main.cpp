@@ -33,6 +33,7 @@ int main(int argc, char * argv[]) {
     std::vector<double> stopBunchingEach (stopSize);
     std::vector<double> stopEntryDelayEach (stopSize);
     std::vector<double> stopExitDelayEach (stopSize);
+    std::vector<double> stopPaxNoEach (stopSize);
     
     // key is sample no, vector contains the sampels
     // to determine the needed simulation rounds
@@ -59,12 +60,14 @@ int main(int argc, char * argv[]) {
         std::vector<double> stopBunchingRMSE (stopSize);
         std::vector<double> stopEntryDelays (stopSize);
         std::vector<double> stopExitDelays (stopSize);
+        std::vector<double> stopPaxNos (stopSize);
         
-        computeMeanDelay(stopDelays, stopServices, stopEntryDelays, stopExitDelays, simulator.busGenerator->peakBusVec);
+        computeMeanDelay(stopDelays, stopServices, stopEntryDelays, stopExitDelays, stopPaxNos, simulator.busGenerator->peakBusVec);
         addVector(stopDelayEach, stopDelays);
         addVector(stopServiceEach, stopServices);
         addVector(stopEntryDelayEach, stopEntryDelays);
         addVector(stopExitDelayEach, stopExitDelays);
+        addVector(stopPaxNoEach, stopPaxNos);
         estimatingRunsMap.insert(std::make_pair(r, stopDelays));
         
         /* bunching RMSE estimations */
@@ -102,13 +105,15 @@ int main(int argc, char * argv[]) {
         std::vector<double> stopBunchingRMSE (stopSize);
         std::vector<double> stopEntryDelays (stopSize);
         std::vector<double> stopExitDelays (stopSize);
+        std::vector<double> stopPaxNos (stopSize);
         
         //        std::vector<double> stopDelays = simulator.collectDelayAsArray();
-        computeMeanDelay(stopDelays, stopServices, stopEntryDelays, stopExitDelays, simulator.busGenerator->peakBusVec);
+        computeMeanDelay(stopDelays, stopServices, stopEntryDelays, stopExitDelays, stopPaxNos, simulator.busGenerator->peakBusVec);
         addVector(stopDelayEach, stopDelays);
         addVector(stopServiceEach, stopServices);
         addVector(stopEntryDelayEach, stopEntryDelays);
         addVector(stopExitDelayEach, stopExitDelays);
+        addVector(stopPaxNoEach, stopPaxNos);
         
         calculateBunchingRMSE(stopBunchingRMSE, simulator.busGenerator->peakBusVec, std::stod(argv[5])/std::stoi(argv[3]));
         addVector(stopBunchingEach, stopBunchingRMSE);
@@ -127,6 +132,8 @@ int main(int argc, char * argv[]) {
     multiplyVector(stopBunchingEach, 1.0/60.0/totalRuns);
     multiplyVector(stopEntryDelayEach, 1.0/60.0/totalRuns);
     multiplyVector(stopExitDelayEach, 1.0/60.0/totalRuns);
+    multiplyVector(stopPaxNoEach, 1.0/totalRuns);
+    
     
     // shout out to the python console and log file
 
@@ -135,6 +142,7 @@ int main(int argc, char * argv[]) {
     double exitDelayCumSum = 0.0;
     double servTimeCumSum = 0.0;
     double bunchingRMSE = 0.0;
+    double paxNo = 0.0;
     for (int s = 0; s < stopSize+1; s++) {
         for(int i = 1; i < argc; ++i) std::cout << argv[i] << " ";
         std::cout << s << " ";
@@ -143,17 +151,19 @@ int main(int argc, char * argv[]) {
         if (s == 0){
             delayCumSum += stopDelayEach[stopSize];
             bunchingRMSE = 0.0;
+            paxNo = stopPaxNoEach[0];
         }else{
             delayCumSum += stopDelayEach[s-1];
             entryDelayCumSum += stopEntryDelayEach[s-1];
             exitDelayCumSum += stopExitDelayEach[s-1];
             bunchingRMSE = stopBunchingEach[s-1];
+            paxNo = stopPaxNoEach[s-1];
         }
 
         if (s != 0) {
             servTimeCumSum += stopServiceEach[s-1];
         }
-        std::cout << entryDelayCumSum << " " << exitDelayCumSum << " " << delayCumSum << " " << servTimeCumSum << " " << bunchingRMSE << std::endl;
+        std::cout << entryDelayCumSum << " " << exitDelayCumSum << " " << delayCumSum << " " << servTimeCumSum << " " << bunchingRMSE << " " <<  paxNo << std::endl;
     }
 }
 

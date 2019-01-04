@@ -31,6 +31,7 @@ Bus::Bus(int id, int bl, double cpt, double bd_rt, double al_rt, double al_prob,
         arrivalTimeEachStop.insert(std::make_pair(k, 0.0));
         entryDelayEachStop.insert(std::make_pair(k, 0.0));
         exitDelayEachStop.insert(std::make_pair(k, 0.0));
+        paxNoEachStop.insert(std::make_pair(k, init_pax));
     }
     // -1 means the consolidation stop
     delayAtEachStop.insert(std::make_pair(-1, 0.0));

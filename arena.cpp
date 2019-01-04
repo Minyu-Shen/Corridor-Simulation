@@ -228,7 +228,7 @@ int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap){
 //    return maxRuns;
 }
 
-void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd &stopExitDelays, std::vector<std::shared_ptr<Bus>> busPtrs){
+void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs){
     
     int stopSize = int(stopServices.size());
     
@@ -256,6 +256,7 @@ void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd 
             stopServices[s] += bus->serviceTimeAtEachStop[s];
             stopEntryDelays[s] += bus->entryDelayEachStop[s];
             stopExitDelays[s] += bus->exitDelayEachStop[s];
+            stopPaxNos[s] += bus->paxNoEachStop[s];
             
             stopSamples[s] += 1;
 //            linkDelays[s] += linkDelay;
@@ -273,11 +274,13 @@ void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd 
             stopServices[s] = stopServices[s] / stopSamples[s];
             stopEntryDelays[s] = stopEntryDelays[s] / stopSamples[s];
             stopExitDelays[s] = stopExitDelays[s] / stopSamples[s];
+            stopPaxNos[s] = stopPaxNos[s] / stopSamples[s];
         }else{
             stopDelays[s] = 0.0;
             stopServices[s] = 0.0;
             stopEntryDelays[s] = 0.0;
             stopExitDelays[s] = 0.0;
+            stopPaxNos[s] = 0.0;
         }
 //        if (linkSamples[s] > 0) {
 //            linkDelays[s] = linkDelays[s] / linkSamples[s];
