@@ -66,9 +66,11 @@ void PaxStop::paxArrival(){
 
 // 1. buses arrivals, from last link
 void PaxStop::busArrival(std::shared_ptr<Bus> bus){
+    // record the bus has arrived at this stop
+    bus->isEnterEachStop[stopID] = true;
+    
     // record the remaining capacity
     bus->paxNoEachStop[stopID] = bus->kPax;
-    
     // record the bus arrival time here
     bus->arrivalTimeEachStop[stopID] = simTimeNow;
     

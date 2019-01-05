@@ -30,6 +30,11 @@ public:
     // bus id
     int busID;
     
+    
+    // check if the bus arrives at that stop
+    // the most import one !!!
+    std::map<int, bool> isEnterEachStop;
+    
     // delay stats
     std::map<int, double> entryDelayEachStop;
     std::map<int, double> exitDelayEachStop;
@@ -42,7 +47,6 @@ public:
     std::map<int, double> arrivalTimeEachStop;
     // remaining capacity at each stop
     std::map<int, double> paxNoEachStop;
-    
     
     // passenger queues on the bus
     // only for common line case, currently no use.

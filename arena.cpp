@@ -231,17 +231,13 @@ int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap){
 void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs){
     
     int stopSize = int(stopServices.size());
-    
-    // link delays are commented, for future (if needed)
     // last index (i.e. stopSize) is the consolidation stop
     for (auto d:stopDelays) d = 0.0; // initialization
     std::vector<int> stopSamples (stopSize+1);
-//    std::vector<int> linkSamples (stopSize);
     
     // initialization
     for (int k = 0; k < stopSize; k++){
         stopSamples[k] = 0;
-//        linkSamples[k] = 0;
     }
     stopSamples[stopSize] = 0;
     
@@ -249,18 +245,15 @@ void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd 
     std::vector<double> sums;
     for (auto &bus: busPtrs){
         sums.push_back(bus->delayAtEachStop[-1]);
-        
         for (int s = 0; s < stopSize; s++) {
-//            double linkDelay = bus->delayOnEachLink[s];
-            stopDelays[s] += bus->delayAtEachStop[s];
-            stopServices[s] += bus->serviceTimeAtEachStop[s];
-            stopEntryDelays[s] += bus->entryDelayEachStop[s];
-            stopExitDelays[s] += bus->exitDelayEachStop[s];
-            stopPaxNos[s] += bus->paxNoEachStop[s];
-            
-            stopSamples[s] += 1;
-//            linkDelays[s] += linkDelay;
-//            linkSamples[s] += 1;
+            if (bus->isEnterEachStop[s]) {
+                stopDelays[s] += bus->delayAtEachStop[s];
+                stopServices[s] += bus->serviceTimeAtEachStop[s];
+                stopEntryDelays[s] += bus->entryDelayEachStop[s];
+                stopExitDelays[s] += bus->exitDelayEachStop[s];
+                stopPaxNos[s] += bus->paxNoEachStop[s];
+                stopSamples[s] += 1;
+            }
         }
         stopDelays[stopSize] += bus->delayAtEachStop[-1];
         stopSamples[stopSize] += 1;
@@ -282,11 +275,6 @@ void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd 
             stopExitDelays[s] = 0.0;
             stopPaxNos[s] = 0.0;
         }
-//        if (linkSamples[s] > 0) {
-//            linkDelays[s] = linkDelays[s] / linkSamples[s];
-//        }else{
-//            linkDelays[s] = 0.0;
-//        }
     }
     if (stopSamples[stopSize] > 0) {
         stopDelays[stopSize] = stopDelays[stopSize] / stopSamples[stopSize];
