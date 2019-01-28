@@ -190,6 +190,7 @@ void BusGenerator::convoyDispatch(double time){
 
 void BusGenerator::convoyFixHeadwayDispatch(double time){
     // future ... change
+    std::random_shuffle(lines.begin(), lines.end());
     if (time-lastDepartureConvoy >= lineMeanHeadway[0]) {
         std::vector<int> convoyLineVector;
         for (auto &ln: lines){
