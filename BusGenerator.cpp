@@ -16,14 +16,32 @@
 BusGenerator::BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, int cSize){
     
     dispatchMode = disMode; arriveMode = arrMode;
+    int no_line = (int)lineMH.size();
+    // if line number is a multiple integer of berth number
+    // else, future ...
+    int m = (int)no_line / cSize;
+    // initializing the groupQueues
+    for (int group = 0; group < cSize; group++) {
+        std::deque<std::shared_ptr<Bus>> oneGroupDeque;
+        groupQueues.insert(std::make_pair(group, oneGroupDeque));
+        lastDepartureTimeGroupMap.insert(std::make_pair(group, 0.0));
+        groups.push_back(group);
+    }
+    int temp_loop = 0, current_group = 0;
     for (auto &p: lineMH){
         lineMeanHeadway.insert(std::make_pair(p.first, p.second));
         lines.push_back(p.first);
-        // initializing the busQueues
-        std::deque<std::shared_ptr<Bus>> oneDeque;
-        busQueues.insert(std::make_pair(p.first, oneDeque));
-        lastDeparture.insert(std::make_pair(p.first, 0.0));
+        
+        // generating the line-group assignment plan
+        lineGroupAssignMap.insert(std::make_pair(p.first, current_group));
+        temp_loop ++;
+        if (temp_loop >= m) {
+            current_group++;
+        }
     }
+    lineFixedHeadway = lineMeanHeadway[0] / m; // for now, all the lines are same
+    convoyFixedHeadway = lineMeanHeadway[0] / m; // for now, also equal to: H/m
+    
     // if the arrival is gaussian, need the c.v.
     if (arrMode == BusArriveCorridorMode::Gaussian) {
         for (auto &p: lineCH){
@@ -35,24 +53,23 @@ BusGenerator::BusGenerator(std::map<int,double> lineMH, std::map<int,double> lin
     capacity = cpt; alightingProb = al_prob;
     totalBus = 0; totalConvoy = 0;
     initialPax = init_pax; convoySize = cSize;
-    lastDispatchLine = -1; lastDepartureConvoy = 0.0;
+    lastDispatchGroup = -1; lastDepartureTimeConvoy = 0.0;
     kStop = stop_no; warmupTime= 0.0;
     totlePeakBus = 0;
 }
 
 void BusGenerator::reset(){
-    for (auto ln:lines){
-        busQueues[ln].clear();
+    for (auto grp:groups){
+        groupQueues[grp].clear();
         busSchedule.clear();
-        lastDeparture[ln] = 0.0;
+        lastDepartureTimeGroupMap[grp] = 0.0;
     }
     peakBusVec.clear();
     totalBus = 0;
-    lastDispatchLine = -1;
-    lastDepartureConvoy = 0.0;
+    lastDispatchGroup = -1;
+    lastDepartureTimeConvoy = 0.0;
     totalConvoy = 0;
     totlePeakBus = 0;
-    
 }
 
 void BusGenerator::schedule(double warm_t, double peak_t){
@@ -87,7 +104,7 @@ void BusGenerator::arrival(double time){
                 bus->isPeak = true;
                 totlePeakBus ++;
             }
-            busQueues[ln].push_back(bus);
+            groupQueues[lineGroupAssignMap[ln]].push_back(bus);
             totalBus += 1;
         }
     }
@@ -115,71 +132,64 @@ void BusGenerator::dispatch(double time){
 
 // dispatch the first bus into the first link
 void BusGenerator::normalDispatch(double time){
-    // shuffle the line array
-    // to reduce the effort of sorting the max among all the lines
+    // shuffle the group array
+    // to reduce the effort of sorting the max among all the groups
     // needed???
-    std::random_shuffle(lines.begin(), lines.end());
-    for(auto ln: lines){
-        // front is the first arrived
-        while (!busQueues[ln].empty()) {
-            dispatchOneToLink(ln);
+    std::random_shuffle(groups.begin(), groups.end());
+    for(auto grp: groups){
+        while (!groupQueues[grp].empty()){
+            dispatchOneToLink(grp);
         }
     }
 }
 
-void BusGenerator::dispatchOneToLink(int ln){
-    auto bus = busQueues[ln].front();
+void BusGenerator::dispatchOneToLink(int grp){
+    auto bus = groupQueues[grp].front();
     nextLink->busEnteringLink(bus);
-    busQueues[ln].pop_front();
+    groupQueues[grp].pop_front();
 }
 
 void BusGenerator::serialDispatch(double time){
-    int n = (int)lines.size();
-    int ln = lines[(lastDispatchLine+1) % n];
-    while (!busQueues[ln].empty()) {
-        dispatchOneToLink(ln);
-        lastDispatchLine = (lastDispatchLine+1) % n;
-        // check if can dispatch next line immediately
-        ln = (lastDispatchLine+1) % n;
+    int grp_total = (int)groups.size();
+    int next_grp = groups[(lastDispatchGroup+1) % grp_total];
+    while (!groupQueues[next_grp].empty()) {
+        dispatchOneToLink(next_grp);
+        lastDispatchGroup = (lastDispatchGroup+1) % grp_total;
+        // check if can dispatch next group immediately
+        next_grp = (lastDispatchGroup+1) % grp_total;
     }
 }
 
 void BusGenerator::serialFixHeadwayDispatch(double time){
-    int n = (int)lines.size();
-    int ln = (lastDispatchLine+1) % n;
-    while (!busQueues[ln].empty()) {
-        if (time-lastDeparture[ln] >= lineMeanHeadway[ln]) {
-            dispatchOneToLink(ln);
-            lastDispatchLine = (lastDispatchLine+1) % n;
-            lastDeparture[ln] = time;
-            // check if can dispatch next line immediately
-            ln = (lastDispatchLine+1) % n;
+    int grp_total = (int)groups.size();
+    int next_grp = groups[(lastDispatchGroup+1) % grp_total];
+    while (!groupQueues[next_grp].empty()) {
+        if (time-lastDepartureTimeGroupMap[next_grp] >= lineFixedHeadway) {
+            dispatchOneToLink(next_grp);
+            lastDispatchGroup = (lastDispatchGroup+1) % grp_total;
+            lastDepartureTimeGroupMap[next_grp] = time;
+            // check if can dispatch next group immediately
+            next_grp = (lastDispatchGroup+1) % grp_total;
         }else{
             break;
         }
     }
 }
 
-
 // dispatch the convoy into the first link
 void BusGenerator::convoyDispatch(double time){
     std::vector<int> convoyLineVector;
-    std::random_shuffle(lines.begin(), lines.end());
-    // shuffle is not good, change it in the future ...
-    
-    for (auto &ln: lines){
-        if (!busQueues[ln].empty()) {
-            convoyLineVector.push_back(ln);
+    for (auto &grp: groups){
+        if (!groupQueues[grp].empty()){
+            convoyLineVector.push_back(groupQueues[grp].front()->busLine);
         }
         if (convoyLineVector.size() == convoySize) break;
     }
-    
     if (convoyLineVector.size() == convoySize) { // ready to be convoyed
         std::vector<std::shared_ptr<Bus>> convoyVector;
-        for (auto ln: convoyLineVector){
-            convoyVector.push_back(busQueues[ln].front());
-            busQueues[ln].pop_front();
-//            totalBus += 1;
+        for (auto grp: groups){
+            convoyVector.push_back(groupQueues[grp].front());
+            groupQueues[grp].pop_front();
         }
         auto convoy = std::make_shared<Convoy>(totalConvoy, convoySize, convoyVector, convoyLineVector);
         nextLink->convoyEnteringLink(convoy);
@@ -189,27 +199,24 @@ void BusGenerator::convoyDispatch(double time){
 }
 
 void BusGenerator::convoyFixHeadwayDispatch(double time){
-    // future ... change
-    std::random_shuffle(lines.begin(), lines.end());
-    if (time-lastDepartureConvoy >= lineMeanHeadway[0]) {
+    if (time-lastDepartureTimeConvoy >= convoyFixedHeadway) {
         std::vector<int> convoyLineVector;
-        for (auto &ln: lines){
-            if (!busQueues[ln].empty()) {
-                convoyLineVector.push_back(ln);
+        for (auto &grp: groups){
+            if (!groupQueues[grp].empty()){
+                convoyLineVector.push_back(groupQueues[grp].front()->busLine);
             }
             if (convoyLineVector.size() == convoySize) break;
         }
         if (convoyLineVector.size() == convoySize) { // ready to be convoyed
             std::vector<std::shared_ptr<Bus>> convoyVector;
-            for (auto ln: convoyLineVector){
-                convoyVector.push_back(busQueues[ln].front());
-                busQueues[ln].pop_front();
-//                totalBus += 1;
+            for (auto grp: groups){
+                convoyVector.push_back(groupQueues[grp].front());
+                groupQueues[grp].pop_front();
             }
             auto convoy = std::make_shared<Convoy>(totalConvoy, convoySize, convoyVector, convoyLineVector);
             nextLink->convoyEnteringLink(convoy);
             totalConvoy += 1;
-            lastDepartureConvoy = time;
+            lastDepartureTimeConvoy = time;
         }
         convoyLineVector.clear();
     }
@@ -229,8 +236,8 @@ void BusGenerator::updateBusStats(){
 //        consolidDelays += 1.0 * blockCount;
 //    }
     
-    for (auto ln: lines){
-        for (auto &bus: busQueues[ln]){
+    for (auto grp: groups){
+        for (auto &bus: groupQueues[grp]){
             if (bus->isPeak) {
                 bus->delayAtEachStop[-1] += 1.0;
             }
@@ -240,15 +247,17 @@ void BusGenerator::updateBusStats(){
 
 
 void BusGenerator::writeBusQueueToJson(nlohmann::json &j, double time){
-    std::string timeString = std::to_string(time);
-    for (auto ln:lines){
-        std::string lineIDStr = std::to_string(ln);
-        if (!busQueues[ln].empty()) {
-            j["bus_queues"][lineIDStr][timeString] = int(busQueues[ln].size());
-        }else{
-            j["bus_queues"][lineIDStr][timeString] = 0;
-        }
-    }
+    // visualization needs rewrite!!!
+    
+//    std::string timeString = std::to_string(time);
+//    for (auto ln:lines){
+//        std::string lineIDStr = std::to_string(ln);
+//        if (!busQueues[ln].empty()) {
+//            j["bus_queues"][lineIDStr][timeString] = int(busQueues[ln].size());
+//        }else{
+//            j["bus_queues"][lineIDStr][timeString] = 0;
+//        }
+//    }
 }
 
 

@@ -42,7 +42,15 @@ public:
     double warmupTime;
     
     // storing buses before dispatch
-    std::map<int, std::deque<std::shared_ptr<Bus>>> busQueues;
+//    std::map<int, std::deque<std::shared_ptr<Bus>>> busQueues;
+    
+    // maintaining consolidation queues for each group
+    // group No. -> deque
+    std::map<int, std::deque<std::shared_ptr<Bus>>> groupQueues;
+    
+    // line-group assignment plan
+    // line No. -> group No.
+    std::map<int, int>lineGroupAssignMap;
     
     // bus arrival mode
     BusArriveCorridorMode arriveMode;
@@ -52,6 +60,9 @@ public:
     
     // routes ids
     std::vector<int> lines;
+    
+    // group ids
+    std::vector<int> groups;
     
     // stop No.
     int kStop;
@@ -87,14 +98,21 @@ public:
     // initial pax number
     double initialPax;
     
-    // record the last dispatch line
-    int lastDispatchLine;
+    // record the last dispatch group
+    int lastDispatchGroup;
     
-    // record the last dispatch line time
-    std::map<int, double> lastDeparture;
+    // record the last departure time of each  group of single bus
+    // group No. -> time
+    std::map<int, double> lastDepartureTimeGroupMap;
     
     // record the last dispatch conovy time
-    double lastDepartureConvoy;
+    double lastDepartureTimeConvoy;
+    
+    // fixed line headway to be set
+    double lineFixedHeadway;
+    
+    // fixed convoy headway to be set
+    double convoyFixedHeadway;
     
     // write the bus queue into the json
     void writeBusQueueToJson(nlohmann::json &j, double time);
