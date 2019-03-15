@@ -37,6 +37,7 @@ BusGenerator::BusGenerator(std::map<int,double> lineMH, std::map<int,double> lin
         temp_loop ++;
         if (temp_loop >= m) {
             current_group++;
+            temp_loop = 0;
         }
     }
     lineFixedHeadway = lineMeanHeadway[0] / m; // for now, all the lines are same
