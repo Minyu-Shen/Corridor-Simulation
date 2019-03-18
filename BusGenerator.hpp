@@ -41,10 +41,13 @@ public:
 //    double simTime; // for test
     double warmupTime;
     
-    // storing buses before dispatch
-//    std::map<int, std::deque<std::shared_ptr<Bus>>> busQueues;
+    // indicate whether strategy to be used
+    int strategy;
     
-    // maintaining consolidation queues for each group
+    // storing buses before dispatch, for dispatch strategy-1
+    std::map<int, std::deque<std::shared_ptr<Bus>>> lineQueues;
+    
+    // maintaining consolidation queues for each group, for dispatch strategy-2
     // group No. -> deque
     std::map<int, std::deque<std::shared_ptr<Bus>>> groupQueues;
     
@@ -98,6 +101,8 @@ public:
     // initial pax number
     double initialPax;
     
+    // ********* strategy -2 starts ***********
+    
     // record the last dispatch group
     int lastDispatchGroup;
     
@@ -108,6 +113,30 @@ public:
     // record the last dispatch conovy time
     double lastDepartureTimeConvoy;
     
+    // ********* strategy -2 ends ***********
+    
+    /******** strategy -1 starts ***********/
+    
+    // record the last dispatch line time, for strategy 1
+    // line No. -> time
+    std::map<int, double> lastDepartureTimeLineMap;
+    
+    // record the last dispatch line
+    int lastDispatchLine;
+    
+    // rexcord the line - convoy assignment
+    std::map<int, int> lineConvoyAssignMap;
+    
+    // totally how many convoys?
+    int convoyNo;
+    
+    // last convoy's dispatch time
+    // convoy no. -> time
+    std::map<int, double> lastDepartureTimeConvoyMap;
+    
+    /******** strategy -1 ends  ***********/
+    
+
     // fixed line headway to be set
     double lineFixedHeadway;
     
@@ -119,7 +148,7 @@ public:
     
 //methods
     //constructor
-    BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, int cSize = 3);
+    BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, int cSize = 3, int strategy=2);
     
     void reset();
     
@@ -139,7 +168,7 @@ public:
     
     void serialFixHeadwayDispatch(double time);
     
-    void dispatchOneToLink(int ln);
+    void dispatchOneToLink(int which);// which is line or group
     
     void updateBusStats();
     
