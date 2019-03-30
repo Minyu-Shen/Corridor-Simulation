@@ -188,7 +188,7 @@ void PaxStop::allocationEntering(){
 
 
 void PaxStop::pushBusToBerth(std::shared_ptr<Bus> bus, int bth_no){
-    bus->lostTime = 0.0;
+    bus->lostTime = 8.0;
     busesInStop[bth_no] = bus;
     busesInWaitzone.pop_front();
     servicingMark[bth_no] = true;
