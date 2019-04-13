@@ -35,6 +35,9 @@ public:
     // capacity and initialPax entering the corridor
     double capacity, initialPax;
     
+    // common passenger ratio
+    double cp_ratio;
+    
     // line configuration
     int kLine; double totalPaxArrRate;
     

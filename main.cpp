@@ -27,7 +27,7 @@ int main(int argc, char * argv[]) {
 //    std::cout << elapsed_secs << std::endl;
     
     /* ---------- test runs ---------- */
-    double testRuns = 200;
+    double testRuns = 200; //200
     std::vector<double> stopDelayEach (stopSize+1);
     std::vector<double> stopServiceEach (stopSize);
     std::vector<double> stopBunchingEach (stopSize);
@@ -71,7 +71,8 @@ int main(int argc, char * argv[]) {
         estimatingRunsMap.insert(std::make_pair(r, stopDelays));
         
         /* bunching RMSE estimations */
-        calculateBunchingRMSE(stopBunchingRMSE, simulator.busGenerator->peakBusVec, std::stod(argv[5])/std::stoi(argv[3]));
+        
+        calculateBunchingRMSE(stopBunchingRMSE, simulator.busGenerator->peakBusVec, 3600.0 / config.meanHeadway);
         addVector(stopBunchingEach, stopBunchingRMSE);
         
 //        computeBunchingRMSE(stopBunchingRMSE, simulator.busGenerator->peakBusVec, std::stod(argv[5])/std::stoi(argv[3]), std::stod(argv[4]), warmDuration*3600);
@@ -85,7 +86,7 @@ int main(int argc, char * argv[]) {
     // estimate num of simulations needed
     int realRuns = computeRuns(estimatingRunsMap) - testRuns;
 //    std::cout << "real runs: " << realRuns << std::endl;
-    
+//    realRuns = 0;
     /* ---------- real runs ---------- */
     for (int r = 0; r < realRuns; r++) {
         simulator.busGenerator->schedule(warmDuration, peakDuration);
@@ -115,7 +116,7 @@ int main(int argc, char * argv[]) {
         addVector(stopExitDelayEach, stopExitDelays);
         addVector(stopPaxNoEach, stopPaxNos);
         
-        calculateBunchingRMSE(stopBunchingRMSE, simulator.busGenerator->peakBusVec, std::stod(argv[5])/std::stoi(argv[3]));
+        calculateBunchingRMSE(stopBunchingRMSE, simulator.busGenerator->peakBusVec, 3600.0 / config.meanHeadway);
         addVector(stopBunchingEach, stopBunchingRMSE);
         
         simulator.reset();

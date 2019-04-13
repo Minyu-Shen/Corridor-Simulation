@@ -101,7 +101,7 @@ public:
     // initial pax number
     double initialPax;
     
-    // ********* strategy -2 starts ***********
+    // ********* strategy -0 starts ***********
     
     // record the last dispatch group
     int lastDispatchGroup;
@@ -113,7 +113,7 @@ public:
     // record the last dispatch conovy time
     double lastDepartureTimeConvoy;
     
-    // ********* strategy -2 ends ***********
+    // ********* strategy -0 ends ***********
     
     /******** strategy -1 starts ***********/
     
@@ -128,7 +128,7 @@ public:
     std::map<int, int> lineConvoyAssignMap;
     
     // totally how many convoys?
-    int convoyNo;
+    int m;
     
     // last convoy's dispatch time
     // convoy no. -> time
@@ -148,7 +148,7 @@ public:
     
 //methods
     //constructor
-    BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, int cSize = 3, int strategy=1);
+    BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, const std::map<int, int>lineGroupAMap, int cSize = 3, int strategy=0);
     
     void reset();
     

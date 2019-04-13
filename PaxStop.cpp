@@ -12,17 +12,32 @@
 #include "Bus.hpp"
 #include "Link.hpp"
 
-PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTypes eType, QueuingRules qRule){
-    stopID = sd; berthSize = bh_sz; enterType = eType;
-    nextLink = nullptr;
+PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTypes eType, QueuingRules qRule, double cp_ratio, const std::map<int, int> lineGroupAMap){
+    stopID = sd; berthSize = bh_sz; enterType = eType; common_ratio = cp_ratio;
+    nextLink = nullptr; lineGroupAssignMap = lineGroupAMap;
     busesInStop.resize(bh_sz); servicingMark.resize(bh_sz);
     std::fill(servicingMark.begin(), servicingMark.end(), false);
     std::fill(busesInStop.begin(), busesInStop.end(), nullptr);
-    // ldm: line -> arrival demand mapping
-    paxQueues = std::make_shared<Queues>(ldm);
-    for (auto &m: ldm){
-        destinations.push_back(m.first);
+    
+    int L = (int)ldm.size();
+    groupLineSize = L / bh_sz;
+    
+    // (unshared) uncommon pax demand, for each line
+    std::map<int, double>uncommonDemandMap; // line -> lambda
+    double oneLineDemand = 0.0;
+    for (auto &map: ldm){
+        lines.push_back(map.first);
+        uncommonDemandMap[map.first] = map.second * (1-common_ratio);
+        if (map.first == 0) oneLineDemand = map.second;
     }
+    // create common pax demand, for each group
+    std::map<int, double>commonDemandMap; // group -> lambda
+    for (int m_it = 0; m_it < bh_sz; m_it++) {
+        commonDemandMap[m_it] = oneLineDemand * common_ratio * groupLineSize;
+    }
+    commonPaxQueue = std::make_shared<Queues>(commonDemandMap);
+    uncommonPaxQueues = std::make_shared<Queues>(uncommonDemandMap);
+    
     std::fill(servicingMark.begin(), servicingMark.end(), false);
     
     // busesInWaitzone  initialization?
@@ -37,7 +52,8 @@ PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTyp
 
 void PaxStop::reset(){
     simTimeNow = 0.0;
-    paxQueues->reset();
+    uncommonPaxQueues->reset();
+    commonPaxQueue->reset();
     std::fill(busesInStop.begin(), busesInStop.end(), nullptr);
     busesInWaitzone.clear();
     std::fill(servicingMark.begin(), servicingMark.end(), false);
@@ -61,7 +77,8 @@ void PaxStop::addAllocationPlan(std::map<int, int> allocPlan){
 
 // 0. pax arrivals
 void PaxStop::paxArrival(){
-    paxQueues->arrival();
+    uncommonPaxQueues->arrival();
+    commonPaxQueue->arrival();
 }
 
 // 1. buses arrivals, from last link
@@ -69,7 +86,7 @@ void PaxStop::busArrival(std::shared_ptr<Bus> bus){
     // record the bus has arrived at this stop
     bus->isEnterEachStop[stopID] = true;
     
-    // record the remaining capacity
+    // record the current pax no.
     bus->paxNoEachStop[stopID] = bus->kPax;
     // record the bus arrival time here
     bus->arrivalTimeEachStop[stopID] = simTimeNow;
@@ -78,7 +95,7 @@ void PaxStop::busArrival(std::shared_ptr<Bus> bus){
     bus->determineAlightingPaxNo(bus->busLine);
     // check whether need to alight
     
-    if (bus->alightingPaxEachStop > 0) { // no pax wants to alight
+    if (bus->alightingPaxEachStop > 0) { // some pax want to alight
         // first put bus in the waitZone
         // then at same simulation delta, check if it can proceed to stop
         busesInWaitzone.push_back(bus);
@@ -200,16 +217,91 @@ void PaxStop::paxOnOff(){
     for (auto &bus: busesInStop){
         if (bus == nullptr) continue;
         if (bus->lostTime <= 0.0) { // acc/dec finished
-            // boarding ...
             int ln = bus->busLine;
-            double paxOnStop = paxQueues->query(ln);
-            if (paxOnStop > 0) {
-                double actualBoardPax = bus->boarding(ln, paxOnStop);
-                paxQueues->decrease(ln, actualBoardPax);
-            }
             // alighting ...
             bus->alighting(ln);
             
+            // boarding ...
+            int group = lineGroupAssignMap[ln];
+            double commonPaxOnStop = commonPaxQueue->query(group);
+            double uncommonPaxOnStop = uncommonPaxQueues->query(ln);
+            if (commonPaxOnStop > 0) {
+                if (uncommonPaxOnStop > 0) {
+                    int rd_value = rand() % (2);
+                    if (rd_value == 0) { // load common
+                        double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop);
+                        commonPaxQueue->decrease(group, actualCommonPaxBoard);
+                    }else{ // load uncommon
+                        double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop);
+                        uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+                    }
+                }else{ // only common
+                    double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop);
+                    commonPaxQueue->decrease(group, actualCommonPaxBoard);
+                }
+            }else{
+                if (uncommonPaxOnStop > 0) { // only uncommon
+                    double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop);
+                    uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+                }else{ // no any pax
+                    // do nothing
+                }
+            }
+            
+            
+//            // boarding ...
+//            // search all the other lines (that can be loaded)
+//            std::vector<int> allCommonLines;
+//            int group = lineGroupAssignMap[ln];
+//
+//            for (auto ln_it:lines){
+//                if (lineGroupAssignMap[ln_it] == group) {
+//                    allCommonLines.push_back(ln_it);
+//                }
+//            }
+//            // store how many queues (that have pax)
+//            std::map<int, double>allCommonLinePaxMap;
+//            for (auto ln_it: allCommonLines){
+//                double commonPaxOnStop_it =  commonPaxQueue->query(ln_it);
+//                if (commonPaxOnStop_it > 0) {
+//                    allCommonLinePaxMap[ln_it] = commonPaxOnStop_it;
+//                }
+//            }
+//            // boarding ...
+//            int totalCommonHavePax = (int)allCommonLinePaxMap.size();
+//            double uncommonPaxOnStop = uncommonPaxQueues->query(ln);
+//            if (uncommonPaxOnStop > 0) {
+//                int rd_value = rand() % (totalCommonHavePax+1);
+//                if (rd_value == totalCommonHavePax) { // unique uncommon queue
+//                    double actualUncommonBoardPax = bus->boarding(ln, uncommonPaxOnStop);
+//                    uncommonPaxQueues->decrease(ln, actualUncommonBoardPax);
+//
+//                }else{ // common queues
+//                    if (totalCommonHavePax == 0) continue;
+//                    auto it = allCommonLinePaxMap.begin();
+//                    std::advance(it, rand() % allCommonLinePaxMap.size());
+//                    int random_ln = it->first;
+//                    double commonPaxOnStop = allCommonLinePaxMap[random_ln];
+//                    // for now, just treat all the onboard pax as the same; i.e. one line
+//                    double actualCommonBoardPax = bus->boarding(ln, commonPaxOnStop);
+//                    commonPaxQueue->decrease(random_ln, actualCommonBoardPax);
+//                }
+//            }else{ // only common queues
+//                if (totalCommonHavePax == 0) continue;
+//                auto it = allCommonLinePaxMap.begin();
+//                std::advance(it, rand() % (int)allCommonLinePaxMap.size());
+//                int random_ln = it->first;
+//                double commonPaxOnStop = allCommonLinePaxMap[random_ln];
+//
+//                // for now, just treat all the onboard pax as the same; i.e. one line
+//                double actualCommonBoardPax = bus->boarding(ln, commonPaxOnStop);
+//
+//                if (stopID == 0 && bus->busID==0) {
+//                    std::cout << simTimeNow <<":" << bus->remainSpace() << ":" << actualCommonBoardPax <<std::endl;
+//                }
+//
+//                commonPaxQueue->decrease(random_ln, actualCommonBoardPax);
+//            }
         } else{ // still acc/dec
             bus->lostTime -= 1.0;
         }
@@ -252,7 +344,18 @@ bool PaxStop::canLeave(int berthNo){
 
 bool PaxStop::boardingAlightingCompleted(std::shared_ptr<Bus> bus){
     if (bus->alightingPaxEachStop > 0) return false;
-    if (paxQueues->query(bus->busLine) > 0 && bus->remainSpace() > 0) return false;
+    int ln = bus->busLine;
+    // check if this unique uncommon line have pax
+    if (uncommonPaxQueues->query(ln) > 0 && bus->remainSpace() > 0) return false;
+    // check if the other common lines have pax
+    int group = lineGroupAssignMap[ln];
+    if (commonPaxQueue->query(group) > 0 && bus->remainSpace() > 0) return false;
+    
+//    for (auto ln_it:lines){
+//        if (lineGroupAssignMap[ln_it] == group) {
+//            if (commonPaxQueue->query(ln_it) > 0 && bus->remainSpace() > 0) return false;
+//        }
+//    }
     return true;
 }
 
@@ -264,39 +367,13 @@ void PaxStop::operation(){
 }
 
 void PaxStop::paxDemandBounding(double d){
-    paxQueues->paxDemandBounding(d);
+//    commonPaxQueue->paxDemandBounding(common_ratio*d);
+    commonPaxQueue->paxDemandBounding(common_ratio * d * groupLineSize);
+    uncommonPaxQueues->paxDemandBounding((1-common_ratio) * d);
 }
 
 // for stats
 void PaxStop::updateBusStats(){
-    
-//    int blockCount = 0;
-//    for (int i = 0; i < int(busesInStop.size()); i++) {
-//        auto bus = busesInStop[i];
-//        if (bus == nullptr) continue;
-//        if (busesInStop[i]->isPeak) {
-//            if (!canLeave(i)) {
-//                blockCount ++;
-//            }
-//        }
-//    }
-//    // check if the front of queue is peak
-//    if (busesInWaitzone.size() > 0) {
-//        if (busesInWaitzone[0]->isPeak){ // even the front is, then all is peak! no need to loop
-//            blockCount = blockCount + int(busesInWaitzone.size());
-//        }else{
-//            for (int i = int(busesInWaitzone.size())-1; i >= 0; i--) {
-//                auto bus = busesInWaitzone[i];
-//                if (bus->isPeak) {
-//                    blockCount ++;
-//                }else{
-//                    break;
-//                }
-//            }
-//        }
-//    }
-//    stopDelays += blockCount * 1.0;
-    
     for (int i = 0; i < int(busesInStop.size()); i++) {
         auto bus = busesInStop[i];
         if (bus == nullptr) continue;
@@ -311,7 +388,9 @@ void PaxStop::updateBusStats(){
             }
         }
     }
-    
+//    if (stopID==0) {
+//        std::cout <<busesInWaitzone.size() <<std::endl;
+//    }
     for (int i = int(busesInWaitzone.size())-1; i >= 0; i--) {
         auto bus = busesInWaitzone[i];
         if (bus->isPeak) {
@@ -352,8 +431,8 @@ void PaxStop::writeToJson(nlohmann::json &j, double time){
     }
     
     // write the paxqueues of each stop into the json
-    for (auto des:destinations){
-        double pax = paxQueues->query(des);
+    for (auto des:lines){
+        double pax = uncommonPaxQueues->query(des);
 //        std::string lineIndicator = std::to_string("line");
         std::string lineIDStr = std::to_string(des);
         std::string stopIDStr = std::to_string(stopID);

@@ -207,7 +207,7 @@ int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap){
     }
     double mean = sumVector(totalDelayVec) / (double)totalDelayVec.size();
     double var = calVariance(totalDelayVec);
-    double nruns = sqrt(var) / (mean * 0.02);
+    double nruns = sqrt(var) / (mean * 0.1); //0.02
     return (int)nruns;
     
     

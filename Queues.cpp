@@ -35,14 +35,18 @@ void Queues::poissonArrival(){
         ps = min(p.second, demandBound);
 //        std::cout << ps << std::endl;
         // ps is the lambda for each line
-        prob2 = cdfexp(waiting[p.first]+1.0, ps);
-        prob1 = cdfexp(waiting[p.first], ps);
-        prob = (prob2-prob1) / (1.0-prob1);
-        if(randu() < prob){  // randu() is a 0-1 uniform R.V.
-            increase(p.first, 1.0);
-            waiting[p.first] = 0.0;
+        if (ps == 0) {
+            
+        }else{
+            prob2 = cdfexp(waiting[p.first]+1.0, ps);
+            prob1 = cdfexp(waiting[p.first], ps);
+            prob = (prob2-prob1) / (1.0-prob1);
+            if(randu() < prob){  // randu() is a 0-1 uniform R.V.
+                increase(p.first, 1.0);
+                waiting[p.first] = 0.0;
+            }
+            else waiting[p.first] += 1.0;
         }
-        else waiting[p.first] += 1.0;
     }
 }
 

@@ -12,6 +12,7 @@
 #include <vector>
 #include <deque>
 #include <map>
+#include <iterator>
 #include "arena.hpp"
 #include "json.hpp"
 
@@ -32,14 +33,23 @@ public:
     // simulation time now, for testing
     double simTimeNow;
     
-    // destinations
-    std::vector<int> destinations;
+    // lines
+    std::vector<int> lines;
     
     // pointer for the next link
     std::shared_ptr<Link> nextLink;
     
     // pax queues
-    std::shared_ptr<Queues>paxQueues;
+    std::shared_ptr<Queues>uncommonPaxQueues;
+    
+    // common pax queues: groupNo -> common pax No.
+    std::shared_ptr<Queues>commonPaxQueue;
+    
+    // line->group plan
+    std::map<int, int>lineGroupAssignMap;
+    
+    // cp ratio
+    double common_ratio;
     
     // berth size
     int berthSize;
@@ -63,9 +73,15 @@ public:
     // the entering type is normal or allocation
     EnteringTypes enterType;
     
+    // common pax ratio for each group of line
+    double cp_ratio;
+    
+    // group's line size (i.e., m)
+    int groupLineSize;
+    
     // methods
     // constructor
-    PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTypes eType, QueuingRules qRule);
+    PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTypes eType, QueuingRules qRule, double cp_ratio, const std::map<int, int> lineGroupAMap);
     
     void reset();
     

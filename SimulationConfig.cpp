@@ -40,22 +40,26 @@ SimulationConfig::SimulationConfig(int argc, char *argv[]){
 
     // number of stop
     int argv_10 = std::stoi(argv[10]);
-    
+
     // capacity
     double argv_11 = std::stod(argv[11]);
-    
+
     // alighting prob
     double argv_12 = std::stod(argv[12]);
 
+    // common passenger ratio
+    double argv_13 = std::stod(argv[13]);
+
     
-//    int argv_1 = 3, argv_2 = 3, argv_3 = 3, argv_9 = 0, argv_10 = 18;
-//    double argv_4 = 20.0, argv_5 = 100.0, argv_6 = 1000.0, argv_7 = 0.2, argv_8 = 0.0;
+//    int argv_1 = 3, argv_2 = 3, argv_3 = 6, argv_9 = 0, argv_10 = 18;
+//    double argv_4 = 60.0, argv_5 = 100.0, argv_6 = 400, argv_7 = 0.4, argv_8 = 0.0, argv_13 = 1.0, argv_12 = 0.2, argv_11 = 120;
     
     berthSize = argv_1; kStop = argv_10; convoySize = argv_2;
     kLine = argv_3; totalPaxArrRate = argv_6/3600.0; // seconds/bus
     meanHeadway = 1 / (argv_5 / 3600.0 / kLine); // seconds/bus
     cvHeadway = argv_7; travelMean = argv_4; travelStd = argv_8*argv_4;
     capacity = argv_11; alightingProb = argv_12;
+    cp_ratio = argv_13;
     
     //enum class DispatchMode{Normal, Convoy, Serial, SerialFixHeadway, ConvoyFixHeadway, SingleNormal};
     switch (argv_9) {
@@ -84,7 +88,6 @@ SimulationConfig::SimulationConfig(int argc, char *argv[]){
 
 Corridor SimulationConfig::CorridorBuilder(SimulationConfig config){
     Corridor simulator = Corridor();
-    
     // pax arrival rate for each line
     std::map<int, double> lineDemandMap;
     // mean arrival headway for each line
@@ -96,15 +99,31 @@ Corridor SimulationConfig::CorridorBuilder(SimulationConfig config){
         busLineMeanHeadway.insert(std::make_pair(k, config.meanHeadway));
         busLineCVHeadway.insert(std::make_pair(k, config.cvHeadway));
     }
+    
+    // create line-group assignment
+    // line No. -> group No.
+    std::map<int, int>lineGroupAMap;
+    int m = (int)config.kLine/config.berthSize;
+    int temp_loop = 0, current_group = 0;
+    for (auto &p: lineDemandMap){
+        // generating the line-group assignment plan
+        lineGroupAMap.insert(std::make_pair(p.first, current_group));
+        temp_loop ++;
+        if (temp_loop >= m) {
+            current_group++;
+            temp_loop = 0;
+        }
+    }
+    
+    
     // creating bus generator
-    auto bg = std::make_shared<BusGenerator>(busLineMeanHeadway, busLineCVHeadway, config.busArriveMode, config.dispatchMode, config.boardingRate, config.alightingRate, config.capacity, config.alightingProb, config.initialPax, config.kStop, config.convoySize);
+    auto bg = std::make_shared<BusGenerator>(busLineMeanHeadway, busLineCVHeadway, config.busArriveMode, config.dispatchMode, config.boardingRate, config.alightingRate, config.capacity, config.alightingProb, config.initialPax, config.kStop, lineGroupAMap, config.convoySize);
     //  Check Dispatch Mode
     if (config.dispatchMode == DispatchMode::Convoy || config.dispatchMode == DispatchMode::ConvoyFixHeadway) { // convoy case
-        
         // creating bus stops
         std::vector<std::shared_ptr<PaxConvoyStop>>stops(config.kStop);
         for (int i = 0; i < config.kStop; i++) {
-            stops[i] = std::make_shared<PaxConvoyStop>(i, config.berthSize, lineDemandMap);
+            stops[i] = std::make_shared<PaxConvoyStop>(i, config.berthSize, lineDemandMap, config.cp_ratio, lineGroupAMap);
         }
         // creating links
         // link number is equal to stop number
@@ -132,7 +151,7 @@ Corridor SimulationConfig::CorridorBuilder(SimulationConfig config){
         // creating bus stops
         std::vector<std::shared_ptr<PaxStop>>stops(config.kStop);
         for (int i = 0; i < config.kStop; i++) {
-            stops[i] = std::make_shared<PaxStop>(i, config.berthSize, lineDemandMap, config.enterStopType, config.queuingRule);
+            stops[i] = std::make_shared<PaxStop>(i, config.berthSize, lineDemandMap, config.enterStopType, config.queuingRule, config.cp_ratio, lineGroupAMap);
         }
         // creating links
         // link number is equal to stop number

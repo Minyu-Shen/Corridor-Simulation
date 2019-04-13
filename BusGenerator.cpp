@@ -13,7 +13,7 @@
 #include "Convoy.hpp"
 #include "PaxStop.hpp"
 
-BusGenerator::BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, int cSize, int strtgy){
+BusGenerator::BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, const std::map<int, int>lineGroupAMap, int cSize, int strtgy){
     
     dispatchMode = disMode; arriveMode = arrMode; strategy = strtgy;
     int no_line = (int)lineMH.size();
@@ -23,8 +23,8 @@ BusGenerator::BusGenerator(std::map<int,double> lineMH, std::map<int,double> lin
         lineMeanHeadway.insert(std::make_pair(p.first, p.second));
         lines.push_back(p.first);
     }
-    
-    convoyNo = (int)no_line / cSize;
+
+    m = (int)no_line / cSize;
     if (strategy == 1) {
         // initializing the busQueues, for strategy-1
         int temp_loop = 0, current_convoy = 0;
@@ -49,24 +49,15 @@ BusGenerator::BusGenerator(std::map<int,double> lineMH, std::map<int,double> lin
             lastDepartureTimeGroupMap.insert(std::make_pair(group, 0.0));
             groups.push_back(group);
         }
-        int temp_loop = 0, current_group = 0;
-        for (auto &p: lineMH){
-            // generating the line-group assignment plan
-            lineGroupAssignMap.insert(std::make_pair(p.first, current_group));
-            temp_loop ++;
-            if (temp_loop >= convoyNo) {
-                current_group++;
-                temp_loop = 0;
-            }
-        }
+        lineGroupAssignMap = lineGroupAMap;
     }
     
     if (strategy == 1) {
         lineFixedHeadway = lineMeanHeadway[0];
         convoyFixedHeadway = lineMeanHeadway[0];
     }else{
-        lineFixedHeadway = lineMeanHeadway[0] / convoyNo; // for now, all the lines are same
-        convoyFixedHeadway = lineMeanHeadway[0] / convoyNo; // for now, also equal to: H/m
+        lineFixedHeadway = lineMeanHeadway[0] / m; // for now, all the lines are same
+        convoyFixedHeadway = lineMeanHeadway[0] / m; // for now, also equal to: H/m
     }
     
     // if the arrival is gaussian, need the c.v.
@@ -81,7 +72,7 @@ BusGenerator::BusGenerator(std::map<int,double> lineMH, std::map<int,double> lin
     totalBus = 0; totalConvoy = 0;
     initialPax = init_pax; convoySize = cSize;
     lastDispatchGroup = -1; lastDepartureTimeConvoy = 0.0;
-    for (int cvy = 0; cvy < convoyNo; cvy++) { // for strategy-1
+    for (int cvy = 0; cvy < m; cvy++) { // for strategy-1
         lastDepartureTimeConvoyMap[cvy] = 0.0;
     }
     lastDispatchLine = -1; // for strategy-1
@@ -95,7 +86,7 @@ void BusGenerator::reset(){
             lineQueues[ln].clear();
             lastDepartureTimeLineMap[ln] = 0.0;
         }
-        for (int cvy = 0; cvy < convoyNo; cvy++) {
+        for (int cvy = 0; cvy < m; cvy++) {
             lastDepartureTimeConvoyMap[cvy] = 0.0;
         }
         lastDispatchLine = -1;
@@ -269,7 +260,7 @@ void BusGenerator::serialFixHeadwayDispatch(double time){
 void BusGenerator::convoyDispatch(double time){
     std::vector<int> convoyLineVector;
     if (strategy == 1) {
-        for (int loopConvoy = 0; loopConvoy < convoyNo; loopConvoy++) {
+        for (int loopConvoy = 0; loopConvoy < m; loopConvoy++) {
             for (auto ln:lines){
                 if (lineConvoyAssignMap[ln] == loopConvoy) {
                     if (!lineQueues[ln].empty()) {
@@ -315,7 +306,7 @@ void BusGenerator::convoyDispatch(double time){
 void BusGenerator::convoyFixHeadwayDispatch(double time){
     std::vector<int> convoyLineVector;
     if (strategy == 1) {
-        for (int possible_cvy = 0; possible_cvy < convoyNo; possible_cvy++) {
+        for (int possible_cvy = 0; possible_cvy < m; possible_cvy++) {
             // first check headway is ok
             if (time-lastDepartureTimeConvoyMap[possible_cvy] >= convoyFixedHeadway) {
                 for (auto ln:lines){

@@ -12,15 +12,29 @@
 #include "Convoy.hpp"
 #include <iostream>
 
-PaxConvoyStop::PaxConvoyStop(int sd, int bh_sz, const std::map<int, double> ldm){
-    stopID = sd; berthSize = bh_sz;
-    nextLink = nullptr;
-    // ldm: line -> arrival demand mapping
-    paxQueues = std::make_shared<Queues>(ldm);
-    for (auto &m: ldm){
-        destinations.push_back(m.first);
+PaxConvoyStop::PaxConvoyStop(int sd, int bh_sz, const std::map<int, double> ldm, double cp_ratio, const std::map<int, int> lineGroupAMap){
+    stopID = sd; berthSize = bh_sz; lineGroupAssignMap = lineGroupAMap;
+    nextLink = nullptr; common_ratio = cp_ratio;
+    
+    int L = (int)ldm.size();
+    groupLineSize = L / bh_sz;
+    
+    // (unshared) uncommon pax demand, for each line
+    std::map<int, double>uncommonDemandMap; // line -> lambda
+    double oneLineDemand = 0.0;
+    for (auto &map: ldm){
+        lines.push_back(map.first);
+        uncommonDemandMap[map.first] = map.second * (1-common_ratio);
+        if (map.first == 0) oneLineDemand = map.second;
     }
-//    std::fill(servicingMark.begin(), servicingMark.end(), false);
+    // create common pax demand, for each group
+    std::map<int, double>commonDemandMap; // group -> lambda
+    for (int m_it = 0; m_it < bh_sz; m_it++) {
+        commonDemandMap[m_it] = oneLineDemand * common_ratio * groupLineSize;
+    }
+    commonPaxQueue = std::make_shared<Queues>(commonDemandMap);
+    uncommonPaxQueues = std::make_shared<Queues>(uncommonDemandMap);
+    
     convoyInStop = nullptr;
     simTimeNow = 0.0;
     stopDelays = 0.0;
@@ -28,7 +42,8 @@ PaxConvoyStop::PaxConvoyStop(int sd, int bh_sz, const std::map<int, double> ldm)
 
 void PaxConvoyStop::reset(){
     simTimeNow = 0.0;
-    paxQueues->reset();
+    commonPaxQueue->reset();
+    uncommonPaxQueues->reset();
     convoyInStop = nullptr;
     convoysInWaitzone.clear();
     stopDelays = 0.0;
@@ -37,7 +52,8 @@ void PaxConvoyStop::reset(){
 
 // 0. pax arrivals
 void PaxConvoyStop::paxArrival(){
-    paxQueues->arrival();
+    commonPaxQueue->arrival();
+    uncommonPaxQueues->arrival();
 }
 
 // 1. convoy arrivals
@@ -102,15 +118,34 @@ void PaxConvoyStop::boarding(){
             int ln = convoyInStop->lines[c];
             auto bus = convoyInStop->buses[c];
             if (bus->lostTime <= 0.0) { // acc/dec finished
-                // boarding ...
-                double paxOnStop = paxQueues->query(ln);
-                if (paxOnStop > 0){ // the stop has line "ln" pax
-                    double actualBoardPax = bus->boarding(ln, paxOnStop);
-                    paxQueues->decrease(ln, actualBoardPax);
-                }
-                
                 // alighting ...
                 bus->alighting(ln);
+                // boarding ...
+                int group = lineGroupAssignMap[ln];
+                double commonPaxOnStop = commonPaxQueue->query(group);
+                double uncommonPaxOnStop = uncommonPaxQueues->query(ln);
+                if (commonPaxOnStop > 0) {
+                    if (uncommonPaxOnStop > 0) {
+                        int rd_value = rand() % (2);
+                        if (rd_value == 0) { // load common
+                            double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop);
+                            commonPaxQueue->decrease(group, actualCommonPaxBoard);
+                        }else{ // load uncommon
+                            double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop);
+                            uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+                        }
+                    }else{ // only common
+                        double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop);
+                        commonPaxQueue->decrease(group, actualCommonPaxBoard);
+                    }
+                }else{
+                    if (uncommonPaxOnStop > 0) { // only uncommon
+                        double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop);
+                        uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+                    }else{ // no any pax
+                        // do nothing
+                    }
+                }
                 
             }else{
                 bus->lostTime -= 1.0;
@@ -134,27 +169,40 @@ void PaxConvoyStop::leaving(){
 
 bool PaxConvoyStop::boardingAlightingCompleted(std::shared_ptr<Bus> bus){
     if (bus->alightingPaxEachStop > 0) return false;
-    if (paxQueues->query(bus->busLine) > 0 && bus->remainSpace() > 0) return false;
+    int ln = bus->busLine;
+    // check if this unique uncommon line have pax
+    if (uncommonPaxQueues->query(ln) > 0 && bus->remainSpace() > 0) return false;
+    // check if the other common lines have pax
+    int group = lineGroupAssignMap[ln];
+    if (commonPaxQueue->query(group) > 0 && bus->remainSpace() > 0) return false;
     return true;
 }
 
 bool PaxConvoyStop::boardingCompleted(){
-    bool isFinished = true;
     for (auto &bus: convoyInStop->buses){
+        if (bus->alightingPaxEachStop > 0) return false;
         int ln = bus->busLine;
-        if (paxQueues->query(ln) > 0){
-            if (bus->remainSpace() > 0.0) {
-                isFinished = false;
-                break;
-            }
-        }
-        
-        if (bus->alightingPaxEachStop > 0) {
-            isFinished = false;
-            break;
-        }
+        // check if this unique uncommon line have pax
+        if (uncommonPaxQueues->query(ln) > 0 && bus->remainSpace() > 0) return false;
+        // check if the other common lines have pax
+        int group = lineGroupAssignMap[ln];
+        if (commonPaxQueue->query(group) > 0 && bus->remainSpace() > 0) return false;
     }
-    return isFinished;
+    return true;
+    
+//        bool isFinished = true;
+//        if (paxQueues->query(ln) > 0){
+//            if (bus->remainSpace() > 0.0) {
+//                isFinished = false;
+//                break;
+//            }
+//        }
+//        if (bus->alightingPaxEachStop > 0) {
+//            isFinished = false;
+//            break;
+//        }
+//    }
+//    return isFinished;
 }
 
 void PaxConvoyStop::operation(){
@@ -165,39 +213,12 @@ void PaxConvoyStop::operation(){
 }
 
 void PaxConvoyStop::paxDemandBounding(double d){
-    paxQueues->paxDemandBounding(d);
+    commonPaxQueue->paxDemandBounding(common_ratio * d * groupLineSize);
+    uncommonPaxQueues->paxDemandBounding((1-common_ratio) * d);
 }
 
 void PaxConvoyStop::updateBusStats(){
-//    if (convoyInStop != nullptr) {
-//        for (auto &bus: convoyInStop->buses){
-//            bus->delayAtEachStop[stopID] += 1.0;
-//        }
-//    }
-//    for (auto &convoy: convoysInWaitzone){
-//        for (auto &bus: convoy->buses){
-//            bus->delayAtEachStop[stopID] += 1.0;
-//        }
-//    }
 
-    // **********
-    
-    
-//    int blockCount = 0;
-//    for (int i = int(convoysInWaitzone.size())-1; i >= 0; i--) {
-//        auto convoy = convoysInWaitzone[i];
-//        int peakCount = 0;
-//        for (auto &bus: convoy->buses){
-//            if (bus->isPeak) {
-//                blockCount ++;
-//                peakCount ++;
-//            }
-//        }
-//        if (peakCount == convoy->convoySize) break;
-//    }
-//    stopDelays += blockCount * 1.0;
-    
-    
     // entry delays
     for (auto convoy: convoysInWaitzone){
         for (auto &bus: convoy->buses){
@@ -243,7 +264,7 @@ void PaxConvoyStop::writeToJson(nlohmann::json &j, double time){
     }
 
     // write the paxqueues of each stop into the json
-    for (auto des:destinations){
+    for (auto des:lines){
         double pax = paxQueues->query(des);
         std::string lineIDStr = std::to_string(des);
         std::string stopIDStr = std::to_string(stopID);

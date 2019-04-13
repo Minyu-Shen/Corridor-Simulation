@@ -40,6 +40,24 @@ public:
     // pax queues
     std::shared_ptr<Queues>paxQueues;
     
+    // lines
+    std::vector<int> lines;
+    
+    // uncommon pax queues
+    std::shared_ptr<Queues>uncommonPaxQueues;
+    
+    // common pax queues: groupNo -> common pax No.
+    std::shared_ptr<Queues>commonPaxQueue;
+    
+    // line->group plan
+    std::map<int, int>lineGroupAssignMap;
+    
+    // cp ratio
+    double common_ratio;
+    
+    // group's line size (i.e., m)
+    int groupLineSize;
+    
     // berth size
     int berthSize;
     
@@ -59,7 +77,7 @@ public:
     // methods
     
     // constructor
-    PaxConvoyStop(int sd, int bh_sz, const std::map<int, double> ldm);
+    PaxConvoyStop(int sd, int bh_sz, const std::map<int, double> ldm, double cp_ratio, const std::map<int, int> lineGroupAMap);
     
     // reset func
     void reset();
