@@ -127,20 +127,32 @@ void PaxConvoyStop::boarding(){
                 if (commonPaxOnStop > 0) {
                     if (uncommonPaxOnStop > 0) {
                         int rd_value = rand() % (2);
-                        if (rd_value == 0) { // load common
-                            double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop);
+                        if (rd_value == 0) { // first load common
+                            double surplus_board = 100; // unbounded for the first time
+                            double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
                             commonPaxQueue->decrease(group, actualCommonPaxBoard);
-                        }else{ // load uncommon
-                            double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop);
-                            uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+                            if (surplus_board > 0) {
+                                double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
+                                uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+                            }
+                        }else{ // first load uncommon
+                            double surplus_board = 100; // unbounded for the first time
+                            double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
+                            commonPaxQueue->decrease(group, actualUnCommonPaxBoard);
+                            if (surplus_board > 0) {
+                                double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
+                                uncommonPaxQueues->decrease(ln, actualCommonPaxBoard);
+                            }
                         }
                     }else{ // only common
-                        double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop);
+                        double surplus_board = 100; // unbounded for the first time
+                        double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
                         commonPaxQueue->decrease(group, actualCommonPaxBoard);
                     }
                 }else{
                     if (uncommonPaxOnStop > 0) { // only uncommon
-                        double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop);
+                        double surplus_board = 100; // unbounded for the first time
+                        double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
                         uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
                     }else{ // no any pax
                         // do nothing
