@@ -41,9 +41,11 @@ Bus::Bus(int id, int bl, double cpt, double bd_rt, double al_rt, double al_prob,
     totalDelays = 0.0;
 }
 
-double Bus::boarding(int ln, double paxOnStop){
-    double boardPax = std::min(paxOnStop, boardingPaxPerDelata);
-    boardPax = std::min(boardPax, remainSpace());
+double Bus::boarding(int ln, double paxOnStop, double &surplus){
+    double capacity_onetime = std::min(boardingPaxPerDelata, surplus);
+    double boardPax = std::min(paxOnStop, capacity_onetime);
+    boardPax = std::min(boardPax, remainSpace()); //actual boarded number
+    surplus = boardingPaxPerDelata - boardPax;
     kPax += boardPax;
     paxOnBusQueue->increase(ln, boardPax);
     return boardPax;

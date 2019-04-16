@@ -91,7 +91,7 @@ public:
     Bus(int id, int bl, double cpt, double bd_rt, double al_rt, double al_prob, double init_pax, int kStop);
         
     // pax board the bus, return the actual boarding No.
-    double boarding(int ln, double paxOnStop);
+    double boarding(int ln, double paxOnStop, double &surplus);
     
     // pax alight the bus
     void alighting(int ln);

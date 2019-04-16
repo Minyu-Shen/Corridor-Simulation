@@ -31,7 +31,7 @@ PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTyp
         if (map.first == 0) oneLineDemand = map.second;
     }
     // create common pax demand, for each group
-    std::map<int, double>commonDemandMap; // group -> lambda
+    std::map<int, double>commonDemandMap; // group -> lambda, group size = berth size
     for (int m_it = 0; m_it < bh_sz; m_it++) {
         commonDemandMap[m_it] = oneLineDemand * common_ratio * groupLineSize;
     }
@@ -228,80 +228,38 @@ void PaxStop::paxOnOff(){
             if (commonPaxOnStop > 0) {
                 if (uncommonPaxOnStop > 0) {
                     int rd_value = rand() % (2);
-                    if (rd_value == 0) { // load common
-                        double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop);
+                    if (rd_value == 0) { // first load common
+                        double surplus_board = 100; // unbounded for the first time
+                        double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
                         commonPaxQueue->decrease(group, actualCommonPaxBoard);
-                    }else{ // load uncommon
-                        double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop);
-                        uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+                        if (surplus_board > 0) {
+                            double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
+                            uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+                        }
+                    }else{ // first load uncommon
+                        double surplus_board = 100; // unbounded for the first time
+                        double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
+                        commonPaxQueue->decrease(group, actualUnCommonPaxBoard);
+                        if (surplus_board > 0) {
+                            double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
+                            uncommonPaxQueues->decrease(ln, actualCommonPaxBoard);
+                        }
                     }
                 }else{ // only common
-                    double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop);
+                    double surplus_board = 100; // unbounded for the first time
+                    double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
                     commonPaxQueue->decrease(group, actualCommonPaxBoard);
                 }
             }else{
                 if (uncommonPaxOnStop > 0) { // only uncommon
-                    double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop);
+                    double surplus_board = 100; // unbounded for the first time
+                    double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
                     uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
                 }else{ // no any pax
                     // do nothing
                 }
             }
             
-            
-//            // boarding ...
-//            // search all the other lines (that can be loaded)
-//            std::vector<int> allCommonLines;
-//            int group = lineGroupAssignMap[ln];
-//
-//            for (auto ln_it:lines){
-//                if (lineGroupAssignMap[ln_it] == group) {
-//                    allCommonLines.push_back(ln_it);
-//                }
-//            }
-//            // store how many queues (that have pax)
-//            std::map<int, double>allCommonLinePaxMap;
-//            for (auto ln_it: allCommonLines){
-//                double commonPaxOnStop_it =  commonPaxQueue->query(ln_it);
-//                if (commonPaxOnStop_it > 0) {
-//                    allCommonLinePaxMap[ln_it] = commonPaxOnStop_it;
-//                }
-//            }
-//            // boarding ...
-//            int totalCommonHavePax = (int)allCommonLinePaxMap.size();
-//            double uncommonPaxOnStop = uncommonPaxQueues->query(ln);
-//            if (uncommonPaxOnStop > 0) {
-//                int rd_value = rand() % (totalCommonHavePax+1);
-//                if (rd_value == totalCommonHavePax) { // unique uncommon queue
-//                    double actualUncommonBoardPax = bus->boarding(ln, uncommonPaxOnStop);
-//                    uncommonPaxQueues->decrease(ln, actualUncommonBoardPax);
-//
-//                }else{ // common queues
-//                    if (totalCommonHavePax == 0) continue;
-//                    auto it = allCommonLinePaxMap.begin();
-//                    std::advance(it, rand() % allCommonLinePaxMap.size());
-//                    int random_ln = it->first;
-//                    double commonPaxOnStop = allCommonLinePaxMap[random_ln];
-//                    // for now, just treat all the onboard pax as the same; i.e. one line
-//                    double actualCommonBoardPax = bus->boarding(ln, commonPaxOnStop);
-//                    commonPaxQueue->decrease(random_ln, actualCommonBoardPax);
-//                }
-//            }else{ // only common queues
-//                if (totalCommonHavePax == 0) continue;
-//                auto it = allCommonLinePaxMap.begin();
-//                std::advance(it, rand() % (int)allCommonLinePaxMap.size());
-//                int random_ln = it->first;
-//                double commonPaxOnStop = allCommonLinePaxMap[random_ln];
-//
-//                // for now, just treat all the onboard pax as the same; i.e. one line
-//                double actualCommonBoardPax = bus->boarding(ln, commonPaxOnStop);
-//
-//                if (stopID == 0 && bus->busID==0) {
-//                    std::cout << simTimeNow <<":" << bus->remainSpace() << ":" << actualCommonBoardPax <<std::endl;
-//                }
-//
-//                commonPaxQueue->decrease(random_ln, actualCommonBoardPax);
-//            }
         } else{ // still acc/dec
             bus->lostTime -= 1.0;
         }
