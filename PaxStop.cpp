@@ -273,6 +273,7 @@ void PaxStop::leaving(){
         if (busesInStop[i] == nullptr) continue;
         if (boardingAlightingCompleted(busesInStop[i])) {
             if (canLeave(i)) {
+                busesInStop[i]->departureTimeEachStop[stopID] = simTimeNow;
                 if (nextLink == nullptr) { // finally finished!
                     
                 } else{

@@ -170,6 +170,9 @@ void PaxConvoyStop::boarding(){
 void PaxConvoyStop::leaving(){
     if (convoyInStop != nullptr) {
         if (boardingCompleted()) {
+            for (auto &bus: convoyInStop->buses){
+                bus->departureTimeEachStop[stopID] = simTimeNow;
+            }
             if (nextLink == nullptr) { // finally finished!
             } else{
                 nextLink->convoyEnteringLink(convoyInStop);

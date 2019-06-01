@@ -165,18 +165,15 @@ void addVector(std::vector<double> &base, std::vector<double> &inc){
     }
 }
 
-//std::pair<double, double> statistic(const std::vector<double> &vhts){
-//    double mean = 0.0, stdvar = 0.0;
-//    for(auto &x: vhts){
-//        mean += x;
-//        stdvar += (x*x);
-//    }
-//    int test_runs = (int)vhts.size();
-//    mean /= double(test_runs);
-//    stdvar /= double(test_runs);
-//    stdvar = sqrt(stdvar - mean * mean);
-//    return std::make_pair(mean, stdvar);
-//}
+double calMean(const std::vector<double> &vec){
+    double meanSum = 0.0;
+    for(auto &x: vec){
+        meanSum += x;
+    }
+    double size = double(int(vec.size()));
+    double mean = meanSum / size;
+    return  mean;
+}
 
 double calVariance(const std::vector<double> &vec){
     double meanSum = 0.0, squareMeanSum = 0.0;
@@ -228,9 +225,10 @@ int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap){
 //    return maxRuns;
 }
 
-void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs){
+void computeMeanDelay(vd &stopDelays, vd &meanDwellTimes, vd &cvDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs){
     
-    int stopSize = int(stopServices.size());
+    
+    int stopSize = int(meanDwellTimes.size());
     // last index (i.e. stopSize) is the consolidation stop
     for (auto d:stopDelays) d = 0.0; // initialization
     std::vector<int> stopSamples (stopSize+1);
@@ -241,21 +239,40 @@ void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd 
     }
     stopSamples[stopSize] = 0;
     
-    // collecting...
-    std::vector<double> sums;
+    // collecting normal stop stats ...
+    for (int s = 0; s < stopSize; s++) {
+        std::vector<double> dwellArrayEachStop;
+        std::vector<double> delaysArrayEachStop;
+        for (auto &bus: busPtrs){
+            if (bus->isEnterEachStop[s]) {
+                dwellArrayEachStop.push_back(bus->serviceTimeAtEachStop[s]);
+                delaysArrayEachStop.push_back(bus->delayAtEachStop[s]);
+            }
+        }
+        meanDwellTimes[s] = calMean(dwellArrayEachStop);
+        cvDwellTimes[s] = double(sqrt(calVariance(dwellArrayEachStop)) / meanDwellTimes[s]);
+        stopDelays[s] = calMean(delaysArrayEachStop);
+        
+//        serviceSumsMap.insert(std::make_pair(s, stopDelays));
+    }
+    // colllecting ordering delays ...
+    std::vector<double> delaysArrayAtOrdering;
+    for (auto &bus: busPtrs) delaysArrayAtOrdering.push_back(bus->delayAtEachStop[-1]);
+    stopDelays[stopSize] = calMean(delaysArrayAtOrdering);
+    
+    
     for (auto &bus: busPtrs){
-        sums.push_back(bus->delayAtEachStop[-1]);
         for (int s = 0; s < stopSize; s++) {
             if (bus->isEnterEachStop[s]) {
-                stopDelays[s] += bus->delayAtEachStop[s];
-                stopServices[s] += bus->serviceTimeAtEachStop[s];
+//                stopDelays[s] += bus->delayAtEachStop[s];
+//                meanDwellTimes[s] += bus->serviceTimeAtEachStop[s];
                 stopEntryDelays[s] += bus->entryDelayEachStop[s];
                 stopExitDelays[s] += bus->exitDelayEachStop[s];
                 stopPaxNos[s] += bus->paxNoEachStop[s];
                 stopSamples[s] += 1;
             }
         }
-        stopDelays[stopSize] += bus->delayAtEachStop[-1];
+//        stopDelays[stopSize] += bus->delayAtEachStop[-1];
         stopSamples[stopSize] += 1;
     }
     
@@ -263,24 +280,24 @@ void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd 
     // calculate the mean
     for (int s = 0; s < stopSize; s++) {
         if (stopSamples[s] > 0) {
-            stopDelays[s] = stopDelays[s] / stopSamples[s];
-            stopServices[s] = stopServices[s] / stopSamples[s];
+//            stopDelays[s] = stopDelays[s] / stopSamples[s];
+//            meanDwellTimes[s] = meanDwellTimes[s] / stopSamples[s];
             stopEntryDelays[s] = stopEntryDelays[s] / stopSamples[s];
             stopExitDelays[s] = stopExitDelays[s] / stopSamples[s];
             stopPaxNos[s] = stopPaxNos[s] / stopSamples[s];
         }else{
-            stopDelays[s] = 0.0;
-            stopServices[s] = 0.0;
+//            stopDelays[s] = 0.0;
+//            meanDwellTimes[s] = 0.0;
             stopEntryDelays[s] = 0.0;
             stopExitDelays[s] = 0.0;
             stopPaxNos[s] = 0.0;
         }
     }
-    if (stopSamples[stopSize] > 0) {
-        stopDelays[stopSize] = stopDelays[stopSize] / stopSamples[stopSize];
-    }else{
-        stopDelays[stopSize] = 0.0;
-    }
+//    if (stopSamples[stopSize] > 0) {
+//        stopDelays[stopSize] = stopDelays[stopSize] / stopSamples[stopSize];
+//    }else{
+//        stopDelays[stopSize] = 0.0;
+//    }
 }
 
 void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map){
@@ -324,7 +341,7 @@ void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map){
 //    }
 //}
 
-void calculateBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow){
+void calculateBunchingRMSE(vd &stopRMSE, vd &stopDepartureRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow){
     // first calculate the actual arrival headway
     // i.e., h_{n,s} = a_{n,s} - a_{n-1,s}
     int stopSize = int(stopRMSE.size());
@@ -333,7 +350,7 @@ void calculateBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPt
         std::vector<double> actualArrivals;
         
         for (auto &bus: busPtrs){
-            // only calculate one specific line's bunching
+            // only calculate one specific line's arrival headway
             if (bus->busLine == 0) {
                 if (bus->arrivalTimeEachStop[s] > 0 ) { //0 means not reaching the downstream stop
                     actualArrivals.push_back(bus->arrivalTimeEachStop[s]);
@@ -353,8 +370,69 @@ void calculateBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPt
         }
         stopRMSE[s] = sqrt(squareErrorSum / (samples-1));
     }
-    
 }
+
+void calculateHeadwayVariation(vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &departHeadwayMean, vd &departHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs){
+    
+    // first calculate the actual arrival headway
+    // i.e., h_{n,s} = a_{n,s} - a_{n-1,s}
+    int stopSize = int(arrivalHeadwayMean.size());
+//    double headway = 3600/busFlow; //in seconds
+    for (int s = 0; s < stopSize; s++) {
+        std::vector<double> actualArrivals;
+        std::vector<double> actualDeparts;
+        for (auto &bus: busPtrs){
+            // only calculate one specific line's arrival headway
+            if (bus->busLine == 0) {
+                if (bus->arrivalTimeEachStop[s] > 0 ) { //0 means not reaching the downstream stop
+                    actualArrivals.push_back(bus->arrivalTimeEachStop[s]);
+                }
+                if (bus->departureTimeEachStop[s] > 0) {
+                    actualDeparts.push_back(bus->departureTimeEachStop[s]);
+                }
+            }
+        }
+        auto arrivalResults = calHeadwayStatsFromTimes(actualArrivals);
+        arrivalHeadwayMean[s] = arrivalResults.first;
+        arrivalHeadwayCv[s] = arrivalResults.second;
+        auto departResults = calHeadwayStatsFromTimes(actualDeparts);
+        departHeadwayMean[s] = departResults.first;
+        departHeadwayCv[s] = departResults.second;
+    }
+}
+
+std::pair<double, double> calHeadwayStatsFromTimes(vd &times){
+//    double squareErrorSum = 0.0;
+    std::vector<double> actualHeadways;
+    int samples = int(times.size());
+    std::sort(times.begin(), times.end());
+    for (int is = 0; is < samples-1; is++) {
+        if (times[is+1] == 0 || times[is] == 0) {
+            // some buses not reaching some downstream stops
+            // do not count
+        }else{
+            actualHeadways.push_back(times[is+1] - times[is]);
+//            squareErrorSum += pow(times[is+1] - times[is] - headway, 2);
+        }
+    }
+//    sqrt(squareErrorSum / (samples-1))
+    double mean = calMean(actualHeadways);
+    return std::make_pair(mean, sqrt(calVariance(actualHeadways)) / mean);
+}
+
+//std::pair<double, double> meanCvStats(const std::vector<double> &inputVector){
+//    double mean = 0.0, stdvar = 0.0;
+//    for(auto &x: inputVector){
+//        mean += x;
+//        stdvar += (x*x);
+//    }
+//    int test_runs = (int)inputVector.size();
+//    mean /= double(test_runs);
+//    stdvar /= double(test_runs);
+//    stdvar = sqrt(stdvar - mean * mean);
+//    return std::make_pair(mean, stdvar);
+//}
+
 
 void writeJsonToFile(nlohmann::json js){
     std::string s = js.dump();

@@ -65,20 +65,27 @@ void addVector(vd &base, vd &inc);
 // calculate mean and std of an array
 //std::pair<double, double> statistic(const std::vector<double> &vhts);
 
+// calculate the mean of an array
+double calMean(const std::vector<double> &vec);
+
 // calculate the variance of an array
 double calVariance(const std::vector<double> &vec);
 
 // calculate number runs needed
 int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap);
 
-void computeMeanDelay(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs);
+void computeMeanDelay(vd &stopDelays, vd &meanDwellTimes, vd &cvDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs);
 
 void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map);
 
 // calculate the bunching RMSE (wrong version~)
 //void computeBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow, double travelTime, double warmupTime);
 
-void calculateBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow);
+void calculateBunchingRMSE(vd &stopRMSE, vd &stopDepartureRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow);
+
+void calculateHeadwayVariation(vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &departHeadwayMean, vd &departHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs);
+
+std::pair<double, double> calHeadwayStatsFromTimes(vd &times);
 
 void writeJsonToFile(nlohmann::json js);
 #endif /* arena_hpp */

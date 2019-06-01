@@ -18,11 +18,11 @@ void normal(int argc, char * argv[], int objective);
 //void correlation_analysis(int argc, char * argv[]);
 
 // one simulation round
-void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, double peakDuration, double warmTotalPaxRate, std::shared_ptr<Stats> stats, std::map<int, std::vector<double>> &estimatingRunsMap, int r, bool isTest);
+void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, double peakDuration, double warmTotalPaxRate, std::shared_ptr<Stats> stats, std::map<int, std::vector<double>> &estimatingRunsMap, int r, bool isTest, int objective);
 
 int main(int argc, char * argv[]) {
     // objective: 0->normal, 1->correlation analysis
-    normal(argc, argv, 0);
+    normal(argc, argv, 1);
 }
 
 void normal(int argc, char *argv[], int objective){
@@ -33,7 +33,7 @@ void normal(int argc, char *argv[], int objective){
     double warmDuration = 3600.0 * 1.5;
     double peakDuration = 3600.0 * 5.5;
     double warmTotalPaxRate = 100.0; // pax/hr
-    auto stats = std::make_shared<Stats>(0, stopSize);
+    auto stats = std::make_shared<Stats>(objective, stopSize);
     
     /* ---------- test runs ---------- */
     double testRuns = 200; //200
@@ -43,23 +43,24 @@ void normal(int argc, char *argv[], int objective){
     std::map<int, std::vector<double>> estimatingRunsMap;
     
     for (int r = 0; r < testRuns; r++) {
-        oneRun(simulator, config, warmDuration, peakDuration, warmTotalPaxRate, stats, estimatingRunsMap, r, true);
+        oneRun(simulator, config, warmDuration, peakDuration, warmTotalPaxRate, stats, estimatingRunsMap, r, true, objective);
     }
     // estimate num of simulations needed
     int realRuns = computeRuns(estimatingRunsMap) - testRuns;
     
     /* ---------- real runs ---------- */
     for (int r = 0; r < realRuns; r++) {
-        oneRun(simulator, config, warmDuration, peakDuration, warmTotalPaxRate, stats, estimatingRunsMap, r, false);
+        oneRun(simulator, config, warmDuration, peakDuration, warmTotalPaxRate, stats, estimatingRunsMap, r, false, objective);
     }
     
     int totalRuns = testRuns +  max(0, realRuns);
-    stats->convertUnitNormal(totalRuns);
-    stats->printToPython(argc, argv);
+    
+    stats->convertUnit(totalRuns, objective);
+    stats->printToPython(argc, argv, objective);
     
 }
 
-void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, double peakDuration, double warmTotalPaxRate, std::shared_ptr<Stats> stats, std::map<int, std::vector<double>> &estimatingRunsMap, int r, bool isTest){
+void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, double peakDuration, double warmTotalPaxRate, std::shared_ptr<Stats> stats, std::map<int, std::vector<double>> &estimatingRunsMap, int r, bool isTest, int objective){
     int stopSize = simulator.busGenerator->kStop;
     simulator.busGenerator->schedule(warmDuration, peakDuration);
     
@@ -75,20 +76,28 @@ void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, do
     }
     
     /* stop delay and service time collections */
-    std::vector<double> stopDelays (stopSize+1);std::vector<double> stopServices (stopSize);
-    std::vector<double> stopBunchingRMSE (stopSize);std::vector<double> stopEntryDelays (stopSize);
-    std::vector<double> stopExitDelays (stopSize);std::vector<double> stopPaxNos (stopSize);
+    std::vector<double> stopDelays (stopSize+1); std::vector<double> stopPaxNos (stopSize);
+    std::vector<double> meanDwellTimes (stopSize); std::vector<double> cvDwellTimes (stopSize);
+    std::vector<double> stopBunchingRMSE (stopSize);// arrival headway deviation
+    std::vector<double> stopDepartureRMSE (stopSize); // departure headway deviation
+    std::vector<double> stopExitDelays (stopSize); std::vector<double> stopEntryDelays (stopSize);
+    std::vector<double> arrivalHeadwayMean (stopSize); std::vector<double> departureHeadwayMean (stopSize);
+    std::vector<double> arrivalHeadwayCv (stopSize); std::vector<double> departureHeadwayCv (stopSize);
     
     // compute the mean of all the buses in one simulation round
-    computeMeanDelay(stopDelays, stopServices, stopEntryDelays, stopExitDelays, stopPaxNos, simulator.busGenerator->peakBusVec);
+    computeMeanDelay(stopDelays, meanDwellTimes, cvDwellTimes, stopEntryDelays, stopExitDelays, stopPaxNos, simulator.busGenerator->peakBusVec);
     /* bunching RMSE estimations */
-    calculateBunchingRMSE(stopBunchingRMSE, simulator.busGenerator->peakBusVec, 3600.0 / config.meanHeadway);
-    stats->updateNormal(stopDelays, stopServices, stopEntryDelays, stopExitDelays, stopPaxNos, stopBunchingRMSE);
+    calculateBunchingRMSE(stopBunchingRMSE, stopDepartureRMSE, simulator.busGenerator->peakBusVec, 3600.0 / config.meanHeadway);
+    calculateHeadwayVariation(arrivalHeadwayMean, arrivalHeadwayCv, departureHeadwayMean, departureHeadwayCv, simulator.busGenerator->peakBusVec);
+    
+    if (objective == 0) stats->updateNormal(stopDelays, meanDwellTimes, stopEntryDelays, stopExitDelays, stopPaxNos, arrivalHeadwayMean);
+    else stats->updateCorr(meanDwellTimes, cvDwellTimes, arrivalHeadwayMean, arrivalHeadwayCv, departureHeadwayMean, departureHeadwayCv);
+    
     if (isTest) {
         estimatingRunsMap.insert(std::make_pair(r, stopDelays));
     }
     
-    
+
     simulator.reset();
 //    writeJsonToFile(simulator.jsObject);
 }

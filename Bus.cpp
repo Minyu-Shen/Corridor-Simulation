@@ -29,6 +29,7 @@ Bus::Bus(int id, int bl, double cpt, double bd_rt, double al_rt, double al_prob,
         delayOnEachLink.insert(std::make_pair(k, 0.0));
         serviceTimeAtEachStop.insert(std::make_pair(k, 0.0));
         arrivalTimeEachStop.insert(std::make_pair(k, 0.0));
+        departureTimeEachStop.insert(std::make_pair(k, 0.0));
         entryDelayEachStop.insert(std::make_pair(k, 0.0));
         exitDelayEachStop.insert(std::make_pair(k, 0.0));
         paxNoEachStop.insert(std::make_pair(k, 0.0));

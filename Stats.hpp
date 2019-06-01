@@ -16,27 +16,36 @@ public:
 
     int stopSize;
     
-    // delays at each stop
-    std::vector<double> totalDelay;
-    std::vector<double> meanService;
-    std::vector<double> bunchingRMSE;
-    std::vector<double> entryDelay;
-    std::vector<double> exitDelay;
-    std::vector<double> paxNo;
+    // for all
+    vd meanDwellTime;
+    
+    // for normal case
+    vd totalDelay;
+    vd bunchingRMSE;
+    vd entryDelay;
+    vd exitDelay;
+    vd paxNo;
+    
+    // for corr case
+    vd cvDwellTime;
+    vd arrivalHeadwayMean;
+    vd arrivalHeadwayCv;
+    vd departHeadwayMean;
+    vd departHeadwayCv;
     
     // constructor
     Stats(int objective, int stopSize);
     
-    
     // method:
     // update stats
-    void updateNormal(vd &stopDelays, vd &stopServices, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, vd &stopBunchingRMSE);
-    
+    void updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, vd &stopBunchingRMSE);
+    void updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs);
     // unit conversion
-    void convertUnitNormal(int totalRuns);
+    void convertUnit(int totalRuns, int objective);
     
     // print to python
-    void printToPython(int argc, char * argv[]);
+    void printToPython(int argc, char * argv[], int objective);
+    
     
 };
 

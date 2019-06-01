@@ -45,8 +45,10 @@ public:
     std::map<int, double> serviceTimeAtEachStop;
     // bus arrival time stats
     std::map<int, double> arrivalTimeEachStop;
-    // remaining capacity at each stop
+    // current pax No. at each stop
     std::map<int, double> paxNoEachStop;
+    // departure time stats
+    std::map<int, double> departureTimeEachStop;
     
     // passenger queues on the bus
     // only for common line case, currently no use.
