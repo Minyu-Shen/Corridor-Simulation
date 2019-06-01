@@ -52,8 +52,11 @@ public:
     // line->group plan
     std::map<int, int>lineGroupAssignMap;
     
-    // cp ratio
+    // cp ratio within group
     double common_ratio;
+    
+    // cp ratio for all lines
+    double common_ratio_all;
     
     // group's line size (i.e., m)
     int groupLineSize;
@@ -77,7 +80,7 @@ public:
     // methods
     
     // constructor
-    PaxConvoyStop(int sd, int bh_sz, const std::map<int, double> ldm, double cp_ratio, const std::map<int, int> lineGroupAMap);
+    PaxConvoyStop(int sd, int bh_sz, const std::map<int, double> ldm, double cp_ratio, double cp_ratio_all, const std::map<int, int> lineGroupAMap);
     
     // reset func
     void reset();

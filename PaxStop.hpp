@@ -12,6 +12,7 @@
 #include <vector>
 #include <deque>
 #include <map>
+#include <set>
 #include <iterator>
 #include "arena.hpp"
 #include "json.hpp"
@@ -48,14 +49,20 @@ public:
     // line->group plan
     std::map<int, int>lineGroupAssignMap;
     
-    // cp ratio
+    // cp ratio within group
     double common_ratio;
+    
+    // cp ratio for all lines
+    double common_ratio_all;
     
     // berth size
     int berthSize;
     
     // berths ptr
     std::vector<std::shared_ptr<Bus>> busesInStop;
+    
+    // unlimited parallel berths
+    std::set<std::shared_ptr<Bus>> busesInParallel;
     
     // waiting (before entering berth) zone at the bus stop
     std::deque<std::shared_ptr<Bus>> busesInWaitzone;
@@ -70,6 +77,9 @@ public:
     // overtaking in and out or not
     bool isOvertakeIn, isOvertakeOut;
     
+    // is parallel or not
+    bool isParallel;
+    
     // the entering type is normal or allocation
     EnteringTypes enterType;
     
@@ -81,7 +91,7 @@ public:
     
     // methods
     // constructor
-    PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTypes eType, QueuingRules qRule, double cp_ratio, const std::map<int, int> lineGroupAMap);
+    PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTypes eType, QueuingRules qRule, double cp_ratio, double cp_ratio_all, const std::map<int, int> lineGroupAMap);
     
     void reset();
     
@@ -117,6 +127,9 @@ private:
     
     // boarding
     void paxOnOff();
+    
+    // one bus on and off
+    void oneBusOnOff(std::shared_ptr<Bus> bus);
     
     // bus leaving
     void leaving();

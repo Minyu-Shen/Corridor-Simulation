@@ -12,9 +12,9 @@
 #include "Convoy.hpp"
 #include <iostream>
 
-PaxConvoyStop::PaxConvoyStop(int sd, int bh_sz, const std::map<int, double> ldm, double cp_ratio, const std::map<int, int> lineGroupAMap){
+PaxConvoyStop::PaxConvoyStop(int sd, int bh_sz, const std::map<int, double> ldm, double cp_ratio, double cp_ratio_all, const std::map<int, int> lineGroupAMap){
     stopID = sd; berthSize = bh_sz; lineGroupAssignMap = lineGroupAMap;
-    nextLink = nullptr; common_ratio = cp_ratio;
+    nextLink = nullptr; common_ratio = cp_ratio; common_ratio_all = cp_ratio_all;
     
     int L = (int)ldm.size();
     groupLineSize = L / bh_sz;

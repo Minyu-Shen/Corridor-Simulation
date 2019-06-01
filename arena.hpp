@@ -18,7 +18,7 @@
 class Bus;
 
 enum class EnteringTypes{Normal, Allocation};
-enum class QueuingRules{ FIFO, LimitedOvertaking, FreeOvertaking, FreeOvertakingWithBlock};
+enum class QueuingRules{Parallel, FIFO, LimitedOvertaking, FreeOvertaking, FreeOvertakingWithBlock};
 
 typedef std::vector<double> vd;
 

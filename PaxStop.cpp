@@ -12,8 +12,9 @@
 #include "Bus.hpp"
 #include "Link.hpp"
 
-PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTypes eType, QueuingRules qRule, double cp_ratio, const std::map<int, int> lineGroupAMap){
-    stopID = sd; berthSize = bh_sz; enterType = eType; common_ratio = cp_ratio;
+PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTypes eType, QueuingRules qRule, double cp_ratio, double cp_ratio_all, const std::map<int, int> lineGroupAMap){
+    stopID = sd; berthSize = bh_sz; enterType = eType;
+    common_ratio = cp_ratio; common_ratio_all = cp_ratio_all;
     nextLink = nullptr; lineGroupAssignMap = lineGroupAMap;
     busesInStop.resize(bh_sz); servicingMark.resize(bh_sz);
     std::fill(servicingMark.begin(), servicingMark.end(), false);
@@ -40,12 +41,19 @@ PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTyp
     
     std::fill(servicingMark.begin(), servicingMark.end(), false);
     
-    // busesInWaitzone  initialization?
     if (qRule == QueuingRules::FIFO || qRule == QueuingRules::LimitedOvertaking) isOvertakeIn = false;
     else isOvertakeIn = true;
     
     if (qRule == QueuingRules::LimitedOvertaking || qRule == QueuingRules::FreeOvertaking || qRule == QueuingRules::FreeOvertakingWithBlock) isOvertakeOut = true;
     else isOvertakeOut = false;
+    
+    if (qRule == QueuingRules::Parallel){
+        isParallel = true;
+//        busesInParallel = std::set<std::shared_ptr<Bus>>{};
+    } else {
+        isParallel = false;
+    }
+    
     stopDelays = 0.0;
     simTimeNow = 0.0;
 }
@@ -54,9 +62,13 @@ void PaxStop::reset(){
     simTimeNow = 0.0;
     uncommonPaxQueues->reset();
     commonPaxQueue->reset();
-    std::fill(busesInStop.begin(), busesInStop.end(), nullptr);
     busesInWaitzone.clear();
-    std::fill(servicingMark.begin(), servicingMark.end(), false);
+    if (isParallel) {
+        busesInParallel.clear();
+    } else {
+        std::fill(busesInStop.begin(), busesInStop.end(), nullptr);
+        std::fill(servicingMark.begin(), servicingMark.end(), false);
+    }
     stopDelays = 0.0;
 }
 
@@ -85,16 +97,18 @@ void PaxStop::paxArrival(){
 void PaxStop::busArrival(std::shared_ptr<Bus> bus){
     // record the bus has arrived at this stop
     bus->isEnterEachStop[stopID] = true;
-    
     // record the current pax no.
     bus->paxNoEachStop[stopID] = bus->kPax;
     // record the bus arrival time here
     bus->arrivalTimeEachStop[stopID] = simTimeNow;
-    
+    // first push bus into waitZone temporarily
+    busesInWaitzone.push_back(bus);
     // set the "alightingPaxEachStop"
     bus->determineAlightingPaxNo(bus->busLine);
-    // check whether need to alight
     
+    /* may be needed in the future !!!
+     
+    // check whether need to alight
     if (bus->alightingPaxEachStop > 0) { // some pax want to alight
         // first put bus in the waitZone
         // then at same simulation delta, check if it can proceed to stop
@@ -128,6 +142,7 @@ void PaxStop::busArrival(std::shared_ptr<Bus> bus){
             busesInWaitzone.push_back(bus); // enter the stop tamely -, -
         }
     }
+     */
 }
 
 // 2. buses entering
@@ -142,33 +157,39 @@ void PaxStop::entering(){
 void PaxStop::normalEntering(){
     while (!busesInWaitzone.empty()) {
         auto bus = busesInWaitzone.front();
-        if (isOvertakeIn) {
-            // just check the most-downstream empty berth
-            int mostDownStreamBerthEmpty = -1;
-            for (int c = berthSize-1; c >= 0; c--) {
-                if (servicingMark[c] == false){ // as long as found, break;
-                    mostDownStreamBerthEmpty = c;
+        if (isParallel) {
+            bus->lostTime = 8.0;
+            busesInParallel.insert(bus);
+            busesInWaitzone.pop_front();
+        } else {
+            if (isOvertakeIn) {
+                // just check the most-downstream empty berth
+                int mostDownStreamBerthEmpty = -1;
+                for (int c = berthSize-1; c >= 0; c--) {
+                    if (servicingMark[c] == false){ // as long as found, break;
+                        mostDownStreamBerthEmpty = c;
+                        break;
+                    }
+                }
+                if (mostDownStreamBerthEmpty >= 0) { // the berths are not all serving
+                    pushBusToBerth(bus, mostDownStreamBerthEmpty);
+                }else{
+                    // no empty berth, break the while
                     break;
                 }
-            }
-            if (mostDownStreamBerthEmpty >= 0) { // the berths are not all serving
-                pushBusToBerth(bus, mostDownStreamBerthEmpty);
-            }else{
-                // no empty berth, break the while
-                break;
-            }
-        } else{
-            // check if can enter without overtake-in
-            int berthAvailable = -1;
-            for (int c = 0; c < berthSize; c++) {
-                if (servicingMark[c] == true) break;
-                else berthAvailable = c;
-            }
-            if (berthAvailable >= 0) { // at least one berth is empty
-                pushBusToBerth(bus, berthAvailable);
-            }else{
-                // no empty berth, break the while
-                break;
+            } else{
+                // check if can enter without overtake-in
+                int berthAvailable = -1;
+                for (int c = 0; c < berthSize; c++) {
+                    if (servicingMark[c] == true) break;
+                    else berthAvailable = c;
+                }
+                if (berthAvailable >= 0) { // at least one berth is empty
+                    pushBusToBerth(bus, berthAvailable);
+                }else{
+                    // no empty berth, break the while
+                    break;
+                }
             }
         }
     }
@@ -213,76 +234,105 @@ void PaxStop::pushBusToBerth(std::shared_ptr<Bus> bus, int bth_no){
 
 // 3. pax boarding and alighting
 void PaxStop::paxOnOff(){
-    // loop the busesInStop to board
-    for (auto &bus: busesInStop){
-        if (bus == nullptr) continue;
-        if (bus->lostTime <= 0.0) { // acc/dec finished
-            int ln = bus->busLine;
-            // alighting ...
-            bus->alighting(ln);
-            
-            // boarding ...
-            int group = lineGroupAssignMap[ln];
-            double commonPaxOnStop = commonPaxQueue->query(group);
-            double uncommonPaxOnStop = uncommonPaxQueues->query(ln);
-            if (commonPaxOnStop > 0) {
-                if (uncommonPaxOnStop > 0) {
-                    int rd_value = rand() % (2);
-                    if (rd_value == 0) { // first load common
-                        double surplus_board = 100; // unbounded for the first time
-                        double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
-                        commonPaxQueue->decrease(group, actualCommonPaxBoard);
-                        if (surplus_board > 0) {
-                            double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
-                            uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
-                        }
-                    }else{ // first load uncommon
-                        double surplus_board = 100; // unbounded for the first time
-                        double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
-                        commonPaxQueue->decrease(group, actualUnCommonPaxBoard);
-                        if (surplus_board > 0) {
-                            double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
-                            uncommonPaxQueues->decrease(ln, actualCommonPaxBoard);
-                        }
-                    }
-                }else{ // only common
+    if (isParallel) {
+        for (auto bus: busesInParallel){
+            oneBusOnOff(bus);
+        }
+    } else {
+        // loop the busesInStop to board
+        for (auto bus: busesInStop){
+            if (bus == nullptr) continue;
+            oneBusOnOff(bus);
+        }
+    }
+}
+
+void PaxStop::oneBusOnOff(std::shared_ptr<Bus> bus){
+    if (bus->lostTime <= 0.0) { // acc/dec finished
+        int ln = bus->busLine;
+        // alighting ...
+        bus->alighting(ln);
+        
+        // boarding ...
+        int group = lineGroupAssignMap[ln];
+        double commonPaxOnStop = commonPaxQueue->query(group);
+        double uncommonPaxOnStop = uncommonPaxQueues->query(ln);
+        if (commonPaxOnStop > 0) {
+            if (uncommonPaxOnStop > 0) {
+                int rd_value = rand() % (2);
+                if (rd_value == 0) { // first load common
                     double surplus_board = 100; // unbounded for the first time
                     double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
                     commonPaxQueue->decrease(group, actualCommonPaxBoard);
-                }
-            }else{
-                if (uncommonPaxOnStop > 0) { // only uncommon
+                    if (surplus_board > 0) {
+                        double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
+                        uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+                    }
+                }else{ // first load uncommon
                     double surplus_board = 100; // unbounded for the first time
                     double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
-                    uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
-                }else{ // no any pax
-                    // do nothing
+                    commonPaxQueue->decrease(group, actualUnCommonPaxBoard);
+                    if (surplus_board > 0) {
+                        double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
+                        uncommonPaxQueues->decrease(ln, actualCommonPaxBoard);
+                    }
                 }
+            }else{ // only common
+                double surplus_board = 100; // unbounded for the first time
+                double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
+                commonPaxQueue->decrease(group, actualCommonPaxBoard);
             }
-            
-        } else{ // still acc/dec
-            bus->lostTime -= 1.0;
+        }else{
+            if (uncommonPaxOnStop > 0) { // only uncommon
+                double surplus_board = 100; // unbounded for the first time
+                double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
+                uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+            }else{ // no any pax
+                // do nothing
+            }
         }
+        
+    } else{ // still acc/dec
+        bus->lostTime -= 1.0;
     }
 }
 
 
 // 4. buses leaving
 void PaxStop::leaving(){
-    for (int i = int(busesInStop.size())-1; i >= 0; i--) {
-        if (busesInStop[i] == nullptr) continue;
-        if (boardingAlightingCompleted(busesInStop[i])) {
-            if (canLeave(i)) {
-                busesInStop[i]->departureTimeEachStop[stopID] = simTimeNow;
+    if (isParallel) {
+        std::set<std::shared_ptr<Bus>>::iterator it;
+        for (it = busesInParallel.begin(); it != busesInParallel.end(); ) {
+            std::shared_ptr<Bus> bus = *it;
+            if (boardingAlightingCompleted(bus)) {
+                bus->departureTimeEachStop[stopID] = simTimeNow;
                 if (nextLink == nullptr) { // finally finished!
                     
                 } else{
-                    nextLink->busEnteringLink(busesInStop[i]);
+                    nextLink->busEnteringLink(bus);
                 }
-                busesInStop[i] = nullptr;
-                servicingMark[i] = false;
+                busesInParallel.erase(it++);
             }else{
-                // just wait
+                ++it;
+            }
+        }
+
+    } else {
+        for (int i = int(busesInStop.size())-1; i >= 0; i--) {
+            if (busesInStop[i] == nullptr) continue;
+            if (boardingAlightingCompleted(busesInStop[i])) {
+                if (canLeave(i)) {
+                    busesInStop[i]->departureTimeEachStop[stopID] = simTimeNow;
+                    if (nextLink == nullptr) { // finally finished!
+                        
+                    } else{
+                        nextLink->busEnteringLink(busesInStop[i]);
+                    }
+                    busesInStop[i] = nullptr;
+                    servicingMark[i] = false;
+                }else{
+                    // just wait
+                }
             }
         }
     }
@@ -333,28 +383,33 @@ void PaxStop::paxDemandBounding(double d){
 
 // for stats
 void PaxStop::updateBusStats(){
-    for (int i = 0; i < int(busesInStop.size()); i++) {
-        auto bus = busesInStop[i];
-        if (bus == nullptr) continue;
-        if (bus->isPeak) {
-            if (boardingAlightingCompleted(bus)) {
-                if (!canLeave(i)) {
-                    bus->delayAtEachStop[stopID] += 1.0;
-                    bus->exitDelayEachStop[stopID] += 1.0;
-                }
-            }else{ // still serving, for recording effective service time
+    if (isParallel) {
+        for (auto bus : busesInParallel) {
+            if (bus->isPeak) {
                 bus->serviceTimeAtEachStop[stopID] += 1.0;
             }
         }
-    }
-//    if (stopID==0) {
-//        std::cout <<busesInWaitzone.size() <<std::endl;
-//    }
-    for (int i = int(busesInWaitzone.size())-1; i >= 0; i--) {
-        auto bus = busesInWaitzone[i];
-        if (bus->isPeak) {
-            bus->delayAtEachStop[stopID] += 1.0;
-            bus->entryDelayEachStop[stopID] += 1.0;
+    } else {
+        for (int i = 0; i < int(busesInStop.size()); i++) {
+            auto bus = busesInStop[i];
+            if (bus == nullptr) continue;
+            if (bus->isPeak) {
+                if (boardingAlightingCompleted(bus)) {
+                    if (!canLeave(i)) {
+                        bus->delayAtEachStop[stopID] += 1.0;
+                        bus->exitDelayEachStop[stopID] += 1.0;
+                    }
+                }else{ // still serving, for recording effective service time
+                    bus->serviceTimeAtEachStop[stopID] += 1.0;
+                }
+            }
+        }
+        for (int i = int(busesInWaitzone.size())-1; i >= 0; i--) {
+            auto bus = busesInWaitzone[i];
+            if (bus->isPeak) {
+                bus->delayAtEachStop[stopID] += 1.0;
+                bus->entryDelayEachStop[stopID] += 1.0;
+            }
         }
     }
 }

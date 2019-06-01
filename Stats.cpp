@@ -7,7 +7,7 @@
 //
 
 #include "Stats.hpp"
-
+#include <iostream>
 
 Stats::Stats(int objective, int stpSize){
     stopSize = stpSize;

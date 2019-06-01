@@ -47,14 +47,15 @@ void normal(int argc, char *argv[], int objective){
     }
     // estimate num of simulations needed
     int realRuns = computeRuns(estimatingRunsMap) - testRuns;
-    
+//    std::cout << realRuns << std::endl;
+
     /* ---------- real runs ---------- */
     for (int r = 0; r < realRuns; r++) {
         oneRun(simulator, config, warmDuration, peakDuration, warmTotalPaxRate, stats, estimatingRunsMap, r, false, objective);
     }
-    
+
     int totalRuns = testRuns +  max(0, realRuns);
-    
+
     stats->convertUnit(totalRuns, objective);
     stats->printToPython(argc, argv, objective);
     
@@ -94,7 +95,7 @@ void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, do
     else stats->updateCorr(meanDwellTimes, cvDwellTimes, arrivalHeadwayMean, arrivalHeadwayCv, departureHeadwayMean, departureHeadwayCv);
     
     if (isTest) {
-        estimatingRunsMap.insert(std::make_pair(r, stopDelays));
+        estimatingRunsMap.insert(std::make_pair(r, cvDwellTimes));
     }
     
 
