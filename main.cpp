@@ -92,7 +92,7 @@ void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, do
     calculateHeadwayVariation(arrivalHeadwayMean, arrivalHeadwayCv, departureHeadwayMean, departureHeadwayCv, simulator.busGenerator->peakBusVec);
     
     if (objective == 0) stats->updateNormal(stopDelays, meanDwellTimes, stopEntryDelays, stopExitDelays, stopPaxNos, arrivalHeadwayMean);
-    else stats->updateCorr(meanDwellTimes, cvDwellTimes, arrivalHeadwayMean, arrivalHeadwayCv, departureHeadwayMean, departureHeadwayCv);
+    else stats->updateCorr(meanDwellTimes, cvDwellTimes, arrivalHeadwayMean, arrivalHeadwayCv, departureHeadwayMean, departureHeadwayCv, stopDelays);
     
     if (isTest) {
         estimatingRunsMap.insert(std::make_pair(r, cvDwellTimes));

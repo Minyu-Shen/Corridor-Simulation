@@ -11,8 +11,8 @@
 
 Stats::Stats(int objective, int stpSize){
     stopSize = stpSize;
+    totalDelay = vd (stopSize+1);
     if (objective == 0) { // normal case
-        totalDelay = vd (stopSize+1);
         meanDwellTime = vd (stopSize);
         bunchingRMSE = vd (stopSize);
         entryDelay = vd (stopSize);
@@ -38,13 +38,14 @@ void Stats::updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays
     addVector(bunchingRMSE, stopBunchingRMSE);
 }
 
-void Stats::updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs){
+void Stats::updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs, vd &stopDelays){
     addVector(meanDwellTime, meanDwellTimes);
     addVector(cvDwellTime, cvDwellTimes);
     addVector(arrivalHeadwayMean, arrivalHeadwayMeans);
     addVector(arrivalHeadwayCv, arrivalHeadwayCvs);
     addVector(departHeadwayMean, departHeadwayMeans);
     addVector(departHeadwayCv, departHeadwayCvs);
+    addVector(totalDelay, stopDelays);
 }
 
 void Stats::convertUnit(int totalRuns, int objective){
@@ -62,6 +63,7 @@ void Stats::convertUnit(int totalRuns, int objective){
         multiplyVector(arrivalHeadwayCv, 1.0/totalRuns);
         multiplyVector(departHeadwayMean, 1.0/60.0/totalRuns);
         multiplyVector(departHeadwayCv, 1.0/totalRuns);
+        multiplyVector(totalDelay, 1.0/60.0/totalRuns);
     }
 }
 
@@ -99,9 +101,9 @@ void Stats::printToPython(int argc, char * argv[], int objective){
             for(int i = 1; i < argc; ++i) std::cout << argv[i] << " ";
             std::cout << s << " ";
             if (s != 0) {
-                std::cout << meanDwellTime[s-1] << " " << cvDwellTime[s-1] << " " << arrivalHeadwayMean[s-1] << " " << arrivalHeadwayCv[s-1] << " " << departHeadwayMean[s-1] << " " <<  departHeadwayCv[s-1] << std::endl;
+                std::cout << meanDwellTime[s-1] << " " << cvDwellTime[s-1] << " " << arrivalHeadwayMean[s-1] << " " << arrivalHeadwayCv[s-1] << " " << departHeadwayMean[s-1] << " " <<  departHeadwayCv[s-1] << " " << totalDelay[s-1] << std::endl;
             }else{
-                std::cout << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " <<  0.0 << std::endl; // for now, all the consolidation indicators are set to be 0.0
+                std::cout << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " <<  0.0 << " " <<  0.0 << std::endl; // for now, all the consolidation indicators are set to be 0.0
             }
         }
     }
