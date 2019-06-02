@@ -22,7 +22,7 @@ void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, do
 
 int main(int argc, char * argv[]) {
     // objective: 0->normal, 1->correlation analysis
-    normal(argc, argv, 1);
+    normal(argc, argv, 0);
 }
 
 void normal(int argc, char *argv[], int objective){

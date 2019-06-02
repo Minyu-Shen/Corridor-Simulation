@@ -49,6 +49,9 @@ public:
     // common pax queues: groupNo -> common pax No.
     std::shared_ptr<Queues>commonPaxQueue;
     
+    // common pax queues for all the lines
+    std::shared_ptr<Queues> commonAllPaxQueue;
+    
     // line->group plan
     std::map<int, int>lineGroupAssignMap;
     
