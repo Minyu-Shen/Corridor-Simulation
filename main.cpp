@@ -79,8 +79,8 @@ void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, do
     /* stop delay and service time collections */
     std::vector<double> stopDelays (stopSize+1); std::vector<double> stopPaxNos (stopSize);
     std::vector<double> meanDwellTimes (stopSize); std::vector<double> cvDwellTimes (stopSize);
-    std::vector<double> stopBunchingRMSE (stopSize);// arrival headway deviation
-    std::vector<double> stopDepartureRMSE (stopSize); // departure headway deviation
+//    std::vector<double> stopBunchingRMSE (stopSize);// arrival headway deviation
+//    std::vector<double> stopDepartureRMSE (stopSize); // departure headway deviation
     std::vector<double> stopExitDelays (stopSize); std::vector<double> stopEntryDelays (stopSize);
     std::vector<double> arrivalHeadwayMean (stopSize); std::vector<double> departureHeadwayMean (stopSize);
     std::vector<double> arrivalHeadwayCv (stopSize); std::vector<double> departureHeadwayCv (stopSize);

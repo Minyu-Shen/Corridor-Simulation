@@ -64,6 +64,9 @@ public:
     // group's line size (i.e., m)
     int groupLineSize;
     
+    // total line size
+    int L;
+    
     // berth size
     int berthSize;
     

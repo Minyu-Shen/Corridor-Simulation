@@ -55,6 +55,7 @@ void Queues::constantArrival(){
         // demands map, first is int, second is double
         // ps is the arrival rate, buses/sec
         double ps = min(p.second, demandBound);
+//        std::cout << ps << std::endl;
         // ps is the lambda for each line
         increase(p.first, ps);
     }

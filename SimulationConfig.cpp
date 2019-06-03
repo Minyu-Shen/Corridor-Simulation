@@ -97,7 +97,7 @@ SimulationConfig::SimulationConfig(int argc, char *argv[]){
     boardingRate = 1/4.0; alightingRate = 1/2.0;
 //    alightingProb = 0.1;
 //    capacity = 1000000.0;
-    initialPax = 30.0;
+    initialPax = 0.0; // 30.0
 }
 
 Corridor SimulationConfig::CorridorBuilder(SimulationConfig config){

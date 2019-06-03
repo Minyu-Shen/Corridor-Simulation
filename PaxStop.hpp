@@ -92,6 +92,9 @@ public:
     // group's line size (i.e., m)
     int groupLineSize;
     
+    // total line size
+    int L;
+    
     // methods
     // constructor
     PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTypes eType, QueuingRules qRule, double cp_ratio, double cp_ratio_all, const std::map<int, int> lineGroupAMap);

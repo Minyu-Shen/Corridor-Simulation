@@ -20,7 +20,7 @@ PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTyp
     std::fill(servicingMark.begin(), servicingMark.end(), false);
     std::fill(busesInStop.begin(), busesInStop.end(), nullptr);
     
-    int L = (int)ldm.size();
+    L = (int)ldm.size();
     groupLineSize = L / bh_sz; // "m" in the paper
     
     // first get one line demand
@@ -285,7 +285,7 @@ void PaxStop::oneBusOnOff(std::shared_ptr<Bus> bus){
         // 1. check common pax for all lines
         double surplus_board = 100; // unbounded for the first time
         if (commonAllPaxOnStop > 0) {
-            double actualCommonAllPaxBoard = bus->boarding(group, commonAllPaxOnStop, surplus_board);
+            double actualCommonAllPaxBoard = bus->boarding(-1, commonAllPaxOnStop, surplus_board);
             commonAllPaxQueue->decrease(-1, actualCommonAllPaxBoard);
         }
         if (surplus_board > 0) {
@@ -403,6 +403,8 @@ bool PaxStop::canLeave(int berthNo){
 bool PaxStop::boardingAlightingCompleted(std::shared_ptr<Bus> bus){
     if (bus->alightingPaxEachStop > 0) return false;
     int ln = bus->busLine;
+    // check if the all lines' common queue is empty
+    if (commonAllPaxQueue->query(-1) > 0 && bus->remainSpace() > 0) return false;
     // check if this unique uncommon line have pax
     if (uncommonPaxQueues->query(ln) > 0 && bus->remainSpace() > 0) return false;
     // check if the other common lines have pax
@@ -425,9 +427,9 @@ void PaxStop::operation(){
 }
 
 void PaxStop::paxDemandBounding(double d){
-//    commonPaxQueue->paxDemandBounding(common_ratio*d);
-    commonPaxQueue->paxDemandBounding(common_ratio * d * groupLineSize);
-    uncommonPaxQueues->paxDemandBounding((1-common_ratio) * d);
+    commonAllPaxQueue->paxDemandBounding(d * L * common_ratio_all);
+    commonPaxQueue->paxDemandBounding(d * (1-common_ratio_all) * common_ratio * groupLineSize);
+    uncommonPaxQueues->paxDemandBounding(d * (1-common_ratio_all) * (1-common_ratio));
 }
 
 // for stats
