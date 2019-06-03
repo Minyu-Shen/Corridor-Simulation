@@ -341,36 +341,36 @@ void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map){
 //    }
 //}
 
-void calculateBunchingRMSE(vd &stopRMSE, vd &stopDepartureRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow){
-    // first calculate the actual arrival headway
-    // i.e., h_{n,s} = a_{n,s} - a_{n-1,s}
-    int stopSize = int(stopRMSE.size());
-    double headway = 3600/busFlow; //in seconds
-    for (int s = 0; s < stopSize; s++) {
-        std::vector<double> actualArrivals;
-        
-        for (auto &bus: busPtrs){
-            // only calculate one specific line's arrival headway
-            if (bus->busLine == 0) {
-                if (bus->arrivalTimeEachStop[s] > 0 ) { //0 means not reaching the downstream stop
-                    actualArrivals.push_back(bus->arrivalTimeEachStop[s]);
-                }
-            }
-        }
-        double squareErrorSum = 0.0;
-        int samples = int(actualArrivals.size());
-        std::sort(actualArrivals.begin(), actualArrivals.end());
-        for (int is = 0; is < samples-1; is++) {
-            if (actualArrivals[is+1] == 0 || actualArrivals[is] == 0) {
-                // some buses not reaching some downstream stops
-                // do not count
-            }else{
-                squareErrorSum += pow(actualArrivals[is+1] - actualArrivals[is] - headway, 2);
-            }
-        }
-        stopRMSE[s] = sqrt(squareErrorSum / (samples-1));
-    }
-}
+//void calculateBunchingRMSE(vd &stopRMSE, vd &stopDepartureRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow){
+//    // first calculate the actual arrival headway
+//    // i.e., h_{n,s} = a_{n,s} - a_{n-1,s}
+//    int stopSize = int(stopRMSE.size());
+//    double headway = 3600/busFlow; //in seconds
+//    for (int s = 0; s < stopSize; s++) {
+//        std::vector<double> actualArrivals;
+//
+//        for (auto &bus: busPtrs){
+//            // only calculate one specific line's arrival headway
+//            if (bus->busLine == 0) {
+//                if (bus->arrivalTimeEachStop[s] > 0 ) { //0 means not reaching the downstream stop
+//                    actualArrivals.push_back(bus->arrivalTimeEachStop[s]);
+//                }
+//            }
+//        }
+//        double squareErrorSum = 0.0;
+//        int samples = int(actualArrivals.size());
+//        std::sort(actualArrivals.begin(), actualArrivals.end());
+//        for (int is = 0; is < samples-1; is++) {
+//            if (actualArrivals[is+1] == 0 || actualArrivals[is] == 0) {
+//                // some buses not reaching some downstream stops
+//                // do not count
+//            }else{
+//                squareErrorSum += pow(actualArrivals[is+1] - actualArrivals[is] - headway, 2);
+//            }
+//        }
+//        stopRMSE[s] = sqrt(squareErrorSum / (samples-1));
+//    }
+//}
 
 void calculateHeadwayVariation(vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &departHeadwayMean, vd &departHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs){
     

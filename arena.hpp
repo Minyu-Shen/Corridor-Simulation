@@ -81,7 +81,7 @@ void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map);
 // calculate the bunching RMSE (wrong version~)
 //void computeBunchingRMSE(vd &stopRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow, double travelTime, double warmupTime);
 
-void calculateBunchingRMSE(vd &stopRMSE, vd &stopDepartureRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow);
+//void calculateBunchingRMSE(vd &stopRMSE, vd &stopDepartureRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow);
 
 void calculateHeadwayVariation(vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &departHeadwayMean, vd &departHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs);
 
