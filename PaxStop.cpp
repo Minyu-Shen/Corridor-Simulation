@@ -127,10 +127,20 @@ void PaxStop::busArrival(std::shared_ptr<Bus> bus){
     bus->paxNoEachStop[stopID] = bus->kPax;
     // record the bus arrival time here
     bus->arrivalTimeEachStop[stopID] = simTimeNow;
-    // first push bus into waitZone temporarily
-    busesInWaitzone.push_back(bus);
     // set the "alightingPaxEachStop"
     bus->determineAlightingPaxNo(bus->busLine);
+    
+    
+    if (bus->remainSpace() <= 0) { // directly leave stop
+        if (nextLink == nullptr) { // finally finished!
+        }else{
+            nextLink->busEnteringLink(bus);
+        }
+        bus->departureTimeEachStop[stopID] = simTimeNow;
+    }else{
+        // first push bus into waitZone temporarily
+        busesInWaitzone.push_back(bus);
+    }
     
     /* may be needed in the future !!!
      

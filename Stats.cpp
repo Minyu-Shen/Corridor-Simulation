@@ -12,30 +12,28 @@
 Stats::Stats(int objective, int stpSize){
     stopSize = stpSize;
     totalDelay = vd (stopSize+1);
+    arrivalHeadwayCv = vd (stopSize);
+    meanDwellTime = vd (stopSize);
     if (objective == 0) { // normal case
-        meanDwellTime = vd (stopSize);
-        bunchingRMSE = vd (stopSize);
+//        bunchingRMSE = vd (stopSize);
         entryDelay = vd (stopSize);
         exitDelay = vd (stopSize);
         paxNo = vd (stopSize);
     } else {
-        meanDwellTime = vd (stopSize);
         cvDwellTime = vd (stopSize);
         arrivalHeadwayMean = vd (stopSize);
-        arrivalHeadwayCv = vd (stopSize);
         departHeadwayMean = vd (stopSize);
         departHeadwayCv = vd (stopSize);
     }
-    
 }
 
-void Stats::updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, vd &stopBunchingRMSE){
+void Stats::updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, vd &arrivalHeadwayCvs){
     addVector(totalDelay, stopDelays);
     addVector(meanDwellTime, meanDwellTimes);
     addVector(entryDelay, stopEntryDelays);
     addVector(exitDelay, stopExitDelays);
     addVector(paxNo, stopPaxNos);
-    addVector(bunchingRMSE, stopBunchingRMSE);
+    addVector(arrivalHeadwayCv, arrivalHeadwayCvs);
 }
 
 void Stats::updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs, vd &stopDelays){
@@ -52,7 +50,8 @@ void Stats::convertUnit(int totalRuns, int objective){
     if (objective == 0) {
         multiplyVector(totalDelay, 1.0/60.0/totalRuns);
         multiplyVector(meanDwellTime, 1.0/60.0/totalRuns);
-        multiplyVector(bunchingRMSE, 1.0/60.0/totalRuns);
+//        multiplyVector(bunchingRMSE, 1.0/60.0/totalRuns);
+        multiplyVector(arrivalHeadwayCv, 1.0/totalRuns);
         multiplyVector(entryDelay, 1.0/60.0/totalRuns);
         multiplyVector(exitDelay, 1.0/60.0/totalRuns);
         multiplyVector(paxNo, 1.0/totalRuns);
@@ -86,7 +85,8 @@ void Stats::printToPython(int argc, char * argv[], int objective){
                 delayCumSum += totalDelay[s-1];
                 entryDelayCumSum += entryDelay[s-1];
                 exitDelayCumSum += exitDelay[s-1];
-                arrivalVariation = bunchingRMSE[s-1];
+//                arrivalVariation = bunchingRMSE[s-1];
+                arrivalVariation =arrivalHeadwayCv[s-1];
                 pNo = paxNo[s-1];
             }
             

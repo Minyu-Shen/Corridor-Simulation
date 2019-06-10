@@ -199,13 +199,15 @@ int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap){
     
     std::vector<double> totalDelayVec;
     for (auto &m: estimatingRunsMap){
+        // total delay as indicator for repeating
         double sums = sumVector(m.second);
         totalDelayVec.push_back(sums);
     }
     double mean = sumVector(totalDelayVec) / (double)totalDelayVec.size();
     double var = calVariance(totalDelayVec);
-    double nruns = sqrt(var) / (mean * 0.1); //0.02
+    double nruns = sqrt(var) / (mean * 0.1); //0.02, 0.1
     return (int)nruns;
+//    return -100;
     
     
 //    int stopSize = int(estimatingRunsMap[0].size()-1);
