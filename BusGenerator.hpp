@@ -47,7 +47,7 @@ public:
     // storing buses before dispatch, for dispatch strategy-1
     std::map<int, std::deque<std::shared_ptr<Bus>>> lineQueues;
     
-    // maintaining consolidation queues for each group, for dispatch strategy-2
+    // maintaining consolidation queues for each group, for dispatch strategy-0 and -2
     // group No. -> deque
     std::map<int, std::deque<std::shared_ptr<Bus>>> groupQueues;
     
@@ -64,7 +64,7 @@ public:
     // routes ids
     std::vector<int> lines;
     
-    // group ids
+    // group ids, for dispatch strategy-0 and -2
     std::vector<int> groups;
     
     // stop No.
@@ -148,7 +148,7 @@ public:
     
 //methods
     //constructor
-    BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, const std::map<int, int>lineGroupAMap, int cSize = 3, int strategy=0);
+    BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, const std::map<int, int>lineGroupAMap, int cSize = 3, int strategy=2);
     
     void reset();
     
