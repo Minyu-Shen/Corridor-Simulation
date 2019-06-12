@@ -27,7 +27,7 @@ class SimulationConfig{
 public:
     
     // berth size, stop No., convoy size
-    int berthSize, kStop, convoySize;
+    int berthSize, kStop, serialGroupSize;
     
     // board and alight
     double boardingRate, alightingRate, alightingProb;

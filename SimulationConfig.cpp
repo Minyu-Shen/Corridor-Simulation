@@ -14,7 +14,7 @@ SimulationConfig::SimulationConfig(int argc, char *argv[]){
     // number of berthSize
     int argv_1 = std::stoi(argv[1]);
 
-    // convoy size
+    // group size for serial dispatch
     int argv_2 = std::stoi(argv[2]);
 
     // number of line
@@ -59,7 +59,7 @@ SimulationConfig::SimulationConfig(int argc, char *argv[]){
 //    int argv_1 = 3, argv_2 = 3, argv_3 = 3, argv_9 = 0, argv_10 = 18, argv_15 = 0;
 //    double argv_4 = 60.0, argv_5 = 100.0, argv_6 = 600, argv_7 = 0.4, argv_8 = 0.0, argv_13 = 0.0, argv_12 = 0.2, argv_11 = 120, argv_14 = 0.0;
     
-    berthSize = argv_1; kStop = argv_10; convoySize = argv_2;
+    berthSize = argv_1; kStop = argv_10; serialGroupSize = argv_2;
     kLine = argv_3; totalPaxArrRate = argv_6/3600.0; // seconds/bus
     meanHeadway = 1 / (argv_5 / 3600.0 / kLine); // seconds/bus
     cvHeadway = argv_7; travelMean = argv_4; travelStd = argv_8*argv_4;
@@ -114,14 +114,14 @@ Corridor SimulationConfig::CorridorBuilder(SimulationConfig config){
         busLineCVHeadway.insert(std::make_pair(k, config.cvHeadway));
     }
     
-    // create line-group assignment
+    // create line-group assignment for convoy
     // line No. -> group No.
-    std::map<int, int>lineGroupAMap;
+    std::map<int, int>lineGroupConvoyMap;
     int m = (int)config.kLine/config.berthSize;
     int temp_loop = 0, current_group = 0;
     for (auto &p: lineDemandMap){
         // generating the line-group assignment plan
-        lineGroupAMap.insert(std::make_pair(p.first, current_group));
+        lineGroupConvoyMap.insert(std::make_pair(p.first, current_group));
         temp_loop ++;
         if (temp_loop >= m) {
             current_group++;
@@ -129,15 +129,29 @@ Corridor SimulationConfig::CorridorBuilder(SimulationConfig config){
         }
     }
     
+    // create line-group assignment for serial
+    // line No. -> group No.
+    std::map<int, int>lineGroupSerialMap;
+    m = (int)config.kLine/config.serialGroupSize;
+    temp_loop = 0; current_group = 0;
+    for (auto &p: lineDemandMap){
+        // generating the line-group assignment plan
+        lineGroupSerialMap.insert(std::make_pair(p.first, current_group));
+        temp_loop ++;
+        if (temp_loop >= m) {
+            current_group++;
+            temp_loop = 0;
+        }
+    }
     
     // creating bus generator
-    auto bg = std::make_shared<BusGenerator>(busLineMeanHeadway, busLineCVHeadway, config.busArriveMode, config.dispatchMode, config.boardingRate, config.alightingRate, config.capacity, config.alightingProb, config.initialPax, config.kStop, lineGroupAMap, config.convoySize);
+    auto bg = std::make_shared<BusGenerator>(busLineMeanHeadway, busLineCVHeadway, config.busArriveMode, config.dispatchMode, config.boardingRate, config.alightingRate, config.capacity, config.alightingProb, config.initialPax, config.kStop, lineGroupConvoyMap, lineGroupSerialMap, config.serialGroupSize, config.berthSize);
     //  Check Dispatch Mode
     if (config.dispatchMode == DispatchMode::Convoy || config.dispatchMode == DispatchMode::ConvoyFixHeadway) { // convoy case
         // creating bus stops
         std::vector<std::shared_ptr<PaxConvoyStop>>stops(config.kStop);
         for (int i = 0; i < config.kStop; i++) {
-            stops[i] = std::make_shared<PaxConvoyStop>(i, config.berthSize, lineDemandMap, config.cp_ratio, config.cp_ratio_all, lineGroupAMap);
+            stops[i] = std::make_shared<PaxConvoyStop>(i, config.berthSize, lineDemandMap, config.cp_ratio, config.cp_ratio_all, lineGroupConvoyMap);
         }
         // creating links
         // link number is equal to stop number
@@ -165,7 +179,7 @@ Corridor SimulationConfig::CorridorBuilder(SimulationConfig config){
         // creating bus stops
         std::vector<std::shared_ptr<PaxStop>>stops(config.kStop);
         for (int i = 0; i < config.kStop; i++) {
-            stops[i] = std::make_shared<PaxStop>(i, config.berthSize, lineDemandMap, config.enterStopType, config.queuingRule, config.cp_ratio, config.cp_ratio_all, lineGroupAMap);
+            stops[i] = std::make_shared<PaxStop>(i, config.berthSize, lineDemandMap, config.enterStopType, config.queuingRule, config.cp_ratio, config.cp_ratio_all, lineGroupSerialMap, config.serialGroupSize);
         }
         // creating links
         // link number is equal to stop number

@@ -44,16 +44,21 @@ public:
     // indicate whether strategy to be used
     int strategy;
     
-    // storing buses before dispatch, for dispatch strategy-1
-    std::map<int, std::deque<std::shared_ptr<Bus>>> lineQueues;
-    
-    // maintaining consolidation queues for each group, for dispatch strategy-0 and -2
+    // maintaining consolidation queues for each group (convoy), for dispatch strategy-0 and -2
     // group No. -> deque
     std::map<int, std::deque<std::shared_ptr<Bus>>> groupQueues;
     
-    // line-group assignment plan
+    // maintaining consolidation queues for each group (serial), for dispatch strategy-0 and -2
+    // group No. -> deque
+    std::map<int, std::deque<std::shared_ptr<Bus>>> serialGroupQueues;
+    
+    // line-group assignment plan (convoy)
     // line No. -> group No.
-    std::map<int, int>lineGroupAssignMap;
+    std::map<int, int>lineGroupConvoyMap;
+    
+    // line-group assignment plan (serial)
+    // line No. -> group No.
+    std::map<int, int>lineGroupSerialMap;
     
     // bus arrival mode
     BusArriveCorridorMode arriveMode;
@@ -64,8 +69,11 @@ public:
     // routes ids
     std::vector<int> lines;
     
-    // group ids, for dispatch strategy-0 and -2
+    // group ids
     std::vector<int> groups;
+    
+    // serial group ids
+    std::vector<int> serialGroups;
     
     // stop No.
     int kStop;
@@ -101,41 +109,22 @@ public:
     // initial pax number
     double initialPax;
     
-    // ********* strategy -0 starts ***********
+    /******** strategy -0 starts ***********/
     
     // record the last dispatch group
     int lastDispatchGroup;
     
     // record the last departure time of each  group of single bus
     // group No. -> time
-    std::map<int, double> lastDepartureTimeGroupMap;
+    std::map<int, double> lastDepartureTimeSerialGroupMap;
     
     // record the last dispatch conovy time
     double lastDepartureTimeConvoy;
     
-    // ********* strategy -0 ends ***********
-    
-    /******** strategy -1 starts ***********/
-    
-    // record the last dispatch line time, for strategy 1
-    // line No. -> time
-    std::map<int, double> lastDepartureTimeLineMap;
-    
-    // record the last dispatch line
-    int lastDispatchLine;
-    
-    // rexcord the line - convoy assignment
-    std::map<int, int> lineConvoyAssignMap;
+    /******** strategy -0 ends ***********/
     
     // totally how many convoys?
     int m;
-    
-    // last convoy's dispatch time
-    // convoy no. -> time
-    std::map<int, double> lastDepartureTimeConvoyMap;
-    
-    /******** strategy -1 ends  ***********/
-    
 
     // fixed line headway to be set
     double lineFixedHeadway;
@@ -148,7 +137,7 @@ public:
     
 //methods
     //constructor
-    BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, const std::map<int, int>lineGroupAMap, int cSize = 3, int strategy=2);
+    BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, const std::map<int, int>lineGroupCMap, const std::map<int, int>lineGroupSMap, int serialGroupSize, int convoyGroupSize, int strategy=2);
     
     void reset();
     

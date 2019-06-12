@@ -12,7 +12,8 @@
 #include "Bus.hpp"
 #include "Link.hpp"
 
-PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTypes eType, QueuingRules qRule, double cp_ratio, double cp_ratio_all, const std::map<int, int> lineGroupAMap){
+PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTypes eType, QueuingRules qRule, double cp_ratio, double cp_ratio_all, const std::map<int, int> lineGroupAMap, int serialGSize){
+    
     stopID = sd; berthSize = bh_sz; enterType = eType;
     common_ratio = cp_ratio; common_ratio_all = cp_ratio_all;
     nextLink = nullptr; lineGroupAssignMap = lineGroupAMap;
@@ -21,7 +22,8 @@ PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTyp
     std::fill(busesInStop.begin(), busesInStop.end(), nullptr);
     
     L = (int)ldm.size();
-    groupLineSize = L / bh_sz; // "m" in the paper
+//    groupLineSize = L / bh_sz; // "m" in the paper
+    groupLineSize = L / serialGSize; // "m" in the paper
     
     // first get one line demand
     double oneLineDemand = ldm.find(0)->second;
@@ -39,29 +41,15 @@ PaxStop::PaxStop(int sd, int bh_sz, const std::map<int, double> ldm, EnteringTyp
     uncommonPaxQueues = std::make_shared<Queues>(uncommonDemandMap);
     
     // 3. create common pax demand, for each group ...
-    std::map<int, double>commonDemandMap; // group -> lambda, group size = berth size
-    for (int m_it = 0; m_it < bh_sz; m_it++) {
+//    std::map<int, double>commonDemandMap; // group -> lambda, group size = berth size
+//    for (int m_it = 0; m_it < bh_sz; m_it++) {
+//        commonDemandMap[m_it] = oneLineDemand * (1-common_ratio_all) * common_ratio * groupLineSize;
+//    }
+    std::map<int, double>commonDemandMap; // group -> lambda, group size = serial group size
+    for (int m_it = 0; m_it < serialGSize; m_it++) {
         commonDemandMap[m_it] = oneLineDemand * (1-common_ratio_all) * common_ratio * groupLineSize;
     }
     commonPaxQueue = std::make_shared<Queues>(commonDemandMap);
-    
-    // future test ...???
-    
-//    // (unshared) uncommon pax demand, for each line
-//    std::map<int, double>uncommonDemandMap; // line -> lambda
-//
-//    for (auto &map: ldm){
-//        lines.push_back(map.first);
-//        uncommonDemandMap[map.first] = map.second * (1-common_ratio);
-//        if (map.first == 0) oneLineDemand = map.second;
-//    }
-//    // create common pax demand, for each group
-//    std::map<int, double>commonDemandMap; // group -> lambda, group size = berth size
-//    for (int m_it = 0; m_it < bh_sz; m_it++) {
-//        commonDemandMap[m_it] = oneLineDemand * common_ratio * groupLineSize;
-//    }
-//    commonPaxQueue = std::make_shared<Queues>(commonDemandMap);
-//    uncommonPaxQueues = std::make_shared<Queues>(uncommonDemandMap);
     
     std::fill(servicingMark.begin(), servicingMark.end(), false);
     
