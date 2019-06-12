@@ -72,12 +72,12 @@ SimulationConfig::SimulationConfig(int argc, char *argv[]){
             break;
         case 1: dispatchMode = DispatchMode::Convoy;
             break;
-        case 2: dispatchMode = DispatchMode::Serial;
+        case 2: dispatchMode = DispatchMode::SerialFixHeadway;
             break;
-        case 3: dispatchMode = DispatchMode::SerialFixHeadway;
+        case 3: dispatchMode = DispatchMode::ConvoyFixHeadway;
             break;
-        case 4: dispatchMode = DispatchMode::ConvoyFixHeadway;
-            break;
+//        case 4: dispatchMode = DispatchMode::ConvoyFixHeadway;
+//            break;
         default: break;
     }
     // enum class QueuingRules{Parallel, FIFO, LimitedOvertaking, FreeOvertaking, FreeOvertakingWithBlock};
