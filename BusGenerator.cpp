@@ -44,8 +44,9 @@ BusGenerator::BusGenerator(std::map<int,double> lineMH, std::map<int,double> lin
     lineGroupSerialMap = lineGroupSMap;
     
     m = (int)no_line / convoyGroupSize;
+    int n = (int)no_line / serialGroupSize;
     if (strategy == 0) {
-        lineFixedHeadway = lineMeanHeadway[0] / m; // for now, all the lines are same
+        lineFixedHeadway = lineMeanHeadway[0] / n; // for now, all the lines are same
         convoyFixedHeadway = lineMeanHeadway[0] / m; // for now, also equal to: H/m
     }else{ // strategy == 2
         // ...

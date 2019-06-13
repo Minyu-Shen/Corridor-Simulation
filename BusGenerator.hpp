@@ -137,7 +137,7 @@ public:
     
 //methods
     //constructor
-    BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, const std::map<int, int>lineGroupCMap, const std::map<int, int>lineGroupSMap, int serialGroupSize, int convoyGroupSize, int strategy=2);
+    BusGenerator(std::map<int,double> lineMH, std::map<int,double> lineCH, BusArriveCorridorMode arrMode, DispatchMode disMode, double bd_rt, double al_rt, double cpt, double al_prob, double init_pax, int stop_no, const std::map<int, int>lineGroupCMap, const std::map<int, int>lineGroupSMap, int serialGroupSize, int convoyGroupSize, int strategy=0);
     
     void reset();
     

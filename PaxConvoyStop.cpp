@@ -147,24 +147,32 @@ void PaxConvoyStop::boarding(){
                 
                 // boarding ...
                 int group = lineGroupAssignMap[ln];
-                double commonAllPaxOnStop = commonAllPaxQueue->query(-1);
-                // 1. check common pax for all lines
                 double surplus_board = 100; // unbounded for the first time
-                if (commonAllPaxOnStop > 0) {
-                    double actualCommonAllPaxBoard = bus->boarding(-1, commonAllPaxOnStop, surplus_board);
-                    commonAllPaxQueue->decrease(-1, actualCommonAllPaxBoard);
+                
+                if (surplus_board > 0) {
+                    // 1. check common pax for all lines
+                    double commonAllPaxOnStop = commonAllPaxQueue->query(-1);
+                    if (commonAllPaxOnStop > 0) {
+                        double actualCommonAllPaxBoard = bus->boarding(-1, commonAllPaxOnStop, surplus_board);
+                        commonAllPaxQueue->decrease(-1, actualCommonAllPaxBoard);
+                    }
                 }
                 if (surplus_board > 0) {
                     // 2. check common pax within group
                     double commonPaxOnStop = commonPaxQueue->query(group);
-                    double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
-                    commonPaxQueue->decrease(group, actualCommonPaxBoard);
+                    if (commonPaxOnStop > 0) {
+                        double actualCommonPaxBoard = bus->boarding(group, commonPaxOnStop, surplus_board);
+                        commonPaxQueue->decrease(group, actualCommonPaxBoard);
+                    }
                 }
+                
                 if (surplus_board > 0) {
                     // 3. check uncommon pax
                     double uncommonPaxOnStop = uncommonPaxQueues->query(ln);
-                    double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
-                    uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+                    if (uncommonPaxOnStop > 0) {
+                        double actualUnCommonPaxBoard = bus->boarding(ln, uncommonPaxOnStop, surplus_board);
+                        uncommonPaxQueues->decrease(ln, actualUnCommonPaxBoard);
+                    }
                 }
                 
                 // the below is wrong code ...
