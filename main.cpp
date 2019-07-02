@@ -30,8 +30,8 @@ void normal(int argc, char *argv[], int objective){
     Corridor simulator = SimulationConfig::CorridorBuilder(config);
     
     int stopSize = simulator.busGenerator->kStop;
-    double warmDuration = 3600.0 * 1.5;
-    double peakDuration = 3600.0 * 5.5;
+    double warmDuration = 3600.0 * 1.0;
+    double peakDuration = 3600.0 * 6.0;
     double warmTotalPaxRate = 100.0; // pax/hr
     auto stats = std::make_shared<Stats>(objective, stopSize);
     

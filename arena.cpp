@@ -166,6 +166,7 @@ void addVector(std::vector<double> &base, std::vector<double> &inc){
 }
 
 double calMean(const std::vector<double> &vec){
+    if (vec.size() == 0) return 0.0;
     double meanSum = 0.0;
     for(auto &x: vec){
         meanSum += x;
@@ -176,6 +177,7 @@ double calMean(const std::vector<double> &vec){
 }
 
 double calVariance(const std::vector<double> &vec){
+    if (vec.size() == 0) return 0.0;
     double meanSum = 0.0, squareMeanSum = 0.0;
     for(auto &x: vec){
         meanSum += x;

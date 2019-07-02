@@ -16,7 +16,7 @@
 
 Link::Link(int id, double ttMean, double ttStd, bool isC){
     linkID = id;
-    convoyPenaltyFactor = 1.2; isConvoy = isC;
+    convoyPenaltyFactor = 1.0; isConvoy = isC;
     travelTimeMean = ttMean; travelTimeStd = ttStd;
     linkLength = 1000.0; // meters
 }
@@ -28,6 +28,7 @@ void Link::reset(){
 
 void Link::busEnteringLink(std::shared_ptr<Bus> &bus){
     double tt = max(0.0, travelTimeMean+randn()*travelTimeStd);
+//    std::cout << tt << std::endl;
     bus->avgSpeedOnCurrentLink = linkLength / tt;
     bus->position = 0.0;
     busesOnLink.push_back(bus);
