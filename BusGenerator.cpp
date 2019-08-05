@@ -95,6 +95,8 @@ void BusGenerator::reset(){
 void BusGenerator::schedule(double warm_t, double peak_t){
     double simTotalTime = warm_t + peak_t;
     warmupTime = warm_t;
+    double ln_size = double(lines.size());
+    double offset = 1.0 / ln_size;
     for(auto ln: lines){
         if (arriveMode == BusArriveCorridorMode::Poisson) {
             double hdw = lineMeanHeadway[ln];
@@ -106,7 +108,8 @@ void BusGenerator::schedule(double warm_t, double peak_t){
             double cv = lineCvHeadway[ln];
             std::deque<double> x;
 //            gaussianTime(x, hdw, cv, simTotalTime);
-            gaussianTimeIndepent(x, hdw, cv, simTotalTime);
+            gaussianTimeIndepent(x, hdw, cv, offset, simTotalTime);
+            offset += 1.0 / ln_size;
             busSchedule.insert(std::make_pair(ln, x));
         }else{
             // constant bus arrival, future ...
@@ -174,19 +177,30 @@ void BusGenerator::dispatchOneToLink(int which){
 
 void BusGenerator::serialFixHeadwayDispatch(double time){
     if (strategy == 0) {
+        //
         int grp_total = (int)serialGroups.size();
-        int next_grp = serialGroups[(lastDispatchGroup+1) % grp_total];
-        while (!serialGroupQueues[next_grp].empty()) {
-            if (time-lastDepartureTimeSerialGroupMap[next_grp] >= lineFixedHeadway) {
-                dispatchOneToLink(next_grp);
-                lastDispatchGroup = (lastDispatchGroup+1) % grp_total;
-                lastDepartureTimeSerialGroupMap[next_grp] = time;
-                // check if can dispatch next group immediately
-                next_grp = (lastDispatchGroup+1) % grp_total;
-            }else{
-                break;
+        for (int group = 0; group < grp_total; group++) {
+            if (!serialGroupQueues[group].empty()) {
+                if (time-lastDepartureTimeSerialGroupMap[group] >= lineFixedHeadway) {
+                    dispatchOneToLink(group);
+                    lastDepartureTimeSerialGroupMap[group] = time;
+                }
             }
         }
+        
+//        int grp_total = (int)serialGroups.size();
+//        int next_grp = serialGroups[(lastDispatchGroup+1) % grp_total];
+//        while (!serialGroupQueues[next_grp].empty()) {
+//            if (time-lastDepartureTimeSerialGroupMap[next_grp] >= lineFixedHeadway) {
+//                dispatchOneToLink(next_grp);
+//                lastDispatchGroup = (lastDispatchGroup+1) % grp_total;
+//                lastDepartureTimeSerialGroupMap[next_grp] = time;
+//                // check if can dispatch next group immediately
+//                next_grp = (lastDispatchGroup+1) % grp_total;
+//            }else{
+//                break;
+//            }
+//        }
     }else{ // strategy == 2
         // ...
         int grp_total = (int)serialGroups.size();

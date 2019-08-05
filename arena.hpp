@@ -43,7 +43,7 @@ void expTime(std::deque<double> &result, double hdw, double duration);
 
 void gaussianTime(std::deque<double> &result, double hdw, double cv, double duration);
 
-void gaussianTimeIndepent(std::deque<double> &result, double hdw, double cv, double duration);
+void gaussianTimeIndepent(std::deque<double> &result, double hdw, double cv, double offset, double duration);
 
 int binomial(int val, double prob);
 
@@ -83,7 +83,7 @@ void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map);
 
 //void calculateBunchingRMSE(vd &stopRMSE, vd &stopDepartureRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow);
 
-void calculateHeadwayVariation(vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &departHeadwayMean, vd &departHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs);
+void calculateHeadwayVariation(int kLine, vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &departHeadwayMean, vd &departHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs);
 
 std::pair<double, double> calHeadwayStatsFromTimes(vd &times);
 

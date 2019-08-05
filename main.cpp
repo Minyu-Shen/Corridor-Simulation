@@ -89,7 +89,7 @@ void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, do
     computeMeanDelay(stopDelays, meanDwellTimes, cvDwellTimes, stopEntryDelays, stopExitDelays, stopPaxNos, simulator.busGenerator->peakBusVec);
     /* bunching RMSE estimations */
 //    calculateBunchingRMSE(stopBunchingRMSE, stopDepartureRMSE, simulator.busGenerator->peakBusVec, 3600.0 / config.meanHeadway);
-    calculateHeadwayVariation(arrivalHeadwayMean, arrivalHeadwayCv, departureHeadwayMean, departureHeadwayCv, simulator.busGenerator->peakBusVec);
+    calculateHeadwayVariation(config.kLine, arrivalHeadwayMean, arrivalHeadwayCv, departureHeadwayMean, departureHeadwayCv, simulator.busGenerator->peakBusVec);
     
     if (objective == 0) stats->updateNormal(stopDelays, meanDwellTimes, stopEntryDelays, stopExitDelays, stopPaxNos, arrivalHeadwayCv);
     else stats->updateCorr(meanDwellTimes, cvDwellTimes, arrivalHeadwayMean, arrivalHeadwayCv, departureHeadwayMean, departureHeadwayCv, stopDelays);

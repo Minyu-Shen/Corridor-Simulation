@@ -86,11 +86,12 @@ void expTime(std::deque<double> &result, double hdw, double duration){
 //}
 
 
-void gaussianTimeIndepent(std::deque<double> &result, double hdw, double cv, double duration){
+void gaussianTimeIndepent(std::deque<double> &result, double hdw, double cv, double offset, double duration){
     int lastScheduleNo = 0;
     while (true){
         // schedule 20 one time
         for(int l = lastScheduleNo; l < lastScheduleNo+20; l++){
+//            double arriveTime = (l+offset) * hdw + randn() * (cv*hdw);
             double arriveTime = (l+1) * hdw + randn() * (cv*hdw);
             if (arriveTime >= duration) {
                 return;
@@ -376,32 +377,43 @@ void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map){
 //    }
 //}
 
-void calculateHeadwayVariation(vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &departHeadwayMean, vd &departHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs){
-    
+void calculateHeadwayVariation(int kLine, vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &departHeadwayMean, vd &departHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs){
     // first calculate the actual arrival headway
     // i.e., h_{n,s} = a_{n,s} - a_{n-1,s}
     int stopSize = int(arrivalHeadwayMean.size());
 //    double headway = 3600/busFlow; //in seconds
+    
     for (int s = 0; s < stopSize; s++) {
-        std::vector<double> actualArrivals;
-        std::vector<double> actualDeparts;
-        for (auto &bus: busPtrs){
-            // only calculate one specific line's arrival headway
-            if (bus->busLine == 0) {
-                if (bus->arrivalTimeEachStop[s] > 0 ) { //0 means not reaching the downstream stop
-                    actualArrivals.push_back(bus->arrivalTimeEachStop[s]);
-                }
-                if (bus->departureTimeEachStop[s] > 0) {
-                    actualDeparts.push_back(bus->departureTimeEachStop[s]);
+        std::vector<double> lineTotalHdwMeans;
+        std::vector<double> lineTotalHdwVars;
+        std::vector<double> lineTotalDptHdwMeans;
+        std::vector<double> lineTotalDptHdwVars;
+        for (int kl = 0; kl < kLine; kl++) {
+            std::vector<double> actualArrivals;
+            std::vector<double> actualDeparts;
+            for (auto &bus: busPtrs){
+                // only calculate one specific line's arrival headway
+                if (bus->busLine == kl) {
+                    if (bus->arrivalTimeEachStop[s] > 0 ) { //0 means not reaching the downstream stop
+                        actualArrivals.push_back(bus->arrivalTimeEachStop[s]);
+                    }
+                    if (bus->departureTimeEachStop[s] > 0) {
+                        actualDeparts.push_back(bus->departureTimeEachStop[s]);
+                    }
                 }
             }
+            auto arrivalResults = calHeadwayStatsFromTimes(actualArrivals);
+            lineTotalHdwMeans.push_back(arrivalResults.first);
+            lineTotalHdwVars.push_back(arrivalResults.second);
+            auto departResults = calHeadwayStatsFromTimes(actualDeparts);
+            lineTotalDptHdwMeans.push_back(departResults.first);
+            lineTotalDptHdwVars.push_back(departResults.second);
         }
-        auto arrivalResults = calHeadwayStatsFromTimes(actualArrivals);
-        arrivalHeadwayMean[s] = arrivalResults.first;
-        arrivalHeadwayCv[s] = arrivalResults.second;
-        auto departResults = calHeadwayStatsFromTimes(actualDeparts);
-        departHeadwayMean[s] = departResults.first;
-        departHeadwayCv[s] = departResults.second;
+        // take the average
+        arrivalHeadwayMean[s] = calMean(lineTotalHdwMeans);
+        arrivalHeadwayCv[s] = calMean(lineTotalHdwVars);
+        departHeadwayMean[s] = calMean(lineTotalDptHdwMeans);
+        departHeadwayCv[s] = calMean(lineTotalDptHdwVars);
     }
 }
 
