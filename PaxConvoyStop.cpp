@@ -132,6 +132,9 @@ void PaxConvoyStop::pushConvoyToBerth(std::shared_ptr<Convoy> convoy){
     for (int c=0; c<berthSize; c++) {
         convoyInStop->buses[c]->lostTime = 8.0 + reactionTime*(berthSize-c-1);
     }
+    for (auto &bus: convoyInStop->buses){
+        bus->entryTimeEachStop[stopID] = simTimeNow;
+    }
 }
 
 // 3. convoy boarding

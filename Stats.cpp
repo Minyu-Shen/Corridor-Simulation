@@ -13,6 +13,8 @@ Stats::Stats(int objective, int stpSize){
     stopSize = stpSize;
     totalDelay = vd (stopSize+1);
     arrivalHeadwayCv = vd (stopSize);
+    entryHeadwayCv = vd (stopSize);
+    
     meanDwellTime = vd (stopSize);
     if (objective == 0) { // normal case
 //        bunchingRMSE = vd (stopSize);
@@ -27,13 +29,14 @@ Stats::Stats(int objective, int stpSize){
     }
 }
 
-void Stats::updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, vd &arrivalHeadwayCvs){
+void Stats::updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, vd &arrivalHeadwayCvs, vd &stopEntryCv){
     addVector(totalDelay, stopDelays);
     addVector(meanDwellTime, meanDwellTimes);
     addVector(entryDelay, stopEntryDelays);
     addVector(exitDelay, stopExitDelays);
     addVector(paxNo, stopPaxNos);
     addVector(arrivalHeadwayCv, arrivalHeadwayCvs);
+    addVector(entryHeadwayCv, stopEntryCv);
 }
 
 void Stats::updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs, vd &stopDelays){
@@ -52,6 +55,7 @@ void Stats::convertUnit(int totalRuns, int objective){
         multiplyVector(meanDwellTime, 1.0/60.0/totalRuns);
 //        multiplyVector(bunchingRMSE, 1.0/60.0/totalRuns);
         multiplyVector(arrivalHeadwayCv, 1.0/totalRuns);
+        multiplyVector(entryHeadwayCv, 1.0/totalRuns);
         multiplyVector(entryDelay, 1.0/60.0/totalRuns);
         multiplyVector(exitDelay, 1.0/60.0/totalRuns);
         multiplyVector(paxNo, 1.0/totalRuns);
@@ -86,7 +90,9 @@ void Stats::printToPython(int argc, char * argv[], int objective){
                 entryDelayCumSum += entryDelay[s-1];
                 exitDelayCumSum += exitDelay[s-1];
 //                arrivalVariation = bunchingRMSE[s-1];
-                arrivalVariation =arrivalHeadwayCv[s-1];
+                /****************** change here to different cv output (entry or arrival) ******************/
+//                arrivalVariation =arrivalHeadwayCv[s-1];
+                arrivalVariation = entryHeadwayCv[s-1];
                 pNo = paxNo[s-1];
             }
             

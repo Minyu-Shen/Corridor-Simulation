@@ -20,17 +20,19 @@ public:
     // for all
     vd meanDwellTime;
     vd totalDelay;
+    vd arrivalHeadwayCv;
     
     // for normal case
     vd bunchingRMSE;
     vd entryDelay;
     vd exitDelay;
     vd paxNo;
+    vd entryHeadwayCv;
     
     // for corr case
     vd cvDwellTime;
     vd arrivalHeadwayMean;
-    vd arrivalHeadwayCv;
+    
     vd departHeadwayMean;
     vd departHeadwayCv;
     
@@ -39,7 +41,7 @@ public:
     
     // method:
     // update stats
-    void updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, vd &stopBunchingRMSE);
+    void updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, vd &arrivalHeadwayCvs, vd &stopEntryCv);
     void updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs, vd &stopDelays);
     // unit conversion
     void convertUnit(int totalRuns, int objective);

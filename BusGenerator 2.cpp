@@ -95,8 +95,6 @@ void BusGenerator::reset(){
 void BusGenerator::schedule(double warm_t, double peak_t){
     double simTotalTime = warm_t + peak_t;
     warmupTime = warm_t;
-    double ln_size = double(lines.size());
-    double offset = 1.0 / ln_size;
     for(auto ln: lines){
         if (arriveMode == BusArriveCorridorMode::Poisson) {
             double hdw = lineMeanHeadway[ln];
@@ -108,8 +106,7 @@ void BusGenerator::schedule(double warm_t, double peak_t){
             double cv = lineCvHeadway[ln];
             std::deque<double> x;
 //            gaussianTime(x, hdw, cv, simTotalTime);
-            gaussianTimeIndepent(x, hdw, cv, offset, simTotalTime);
-            offset += 1.0 / ln_size;
+            gaussianTimeIndepent(x, hdw, cv, simTotalTime);
             busSchedule.insert(std::make_pair(ln, x));
         }else{
             // constant bus arrival, future ...
@@ -120,9 +117,6 @@ void BusGenerator::schedule(double warm_t, double peak_t){
 void BusGenerator::arrival(double time){
     for (auto ln: lines){
         while (!busSchedule[ln].empty() && busSchedule[ln].front() <= time) {
-//            if (ln == 0) {
-//                std::cout << "arrive:" << busSchedule[ln].front() << ", bus id:" << totalBus << std::endl;
-//            }
             auto bus = std::make_shared<Bus>(totalBus, ln, capacity, boardingRate, alightingRate, alightingProb, initialPax, kStop);
             busSchedule[ln].pop_front();
             if (busSchedule[ln].front() > warmupTime){
@@ -174,45 +168,25 @@ void BusGenerator::normalDispatch(double time){
 void BusGenerator::dispatchOneToLink(int which){
     // which is line or group, denpent on strategy
     auto bus = serialGroupQueues[which].front();
-//    if (which == 0) {
-//        if (bus->isPeak) {
-//            std::cout << bus->delayAtEachStop[-1] << std::endl;
-//        }
-//    }
     nextLink->busEnteringLink(bus);
     serialGroupQueues[which].pop_front();
 }
 
 void BusGenerator::serialFixHeadwayDispatch(double time){
     if (strategy == 0) {
-        //
         int grp_total = (int)serialGroups.size();
-        for (int group = 0; group < grp_total; group++) {
-            if (!serialGroupQueues[group].empty()) {
-                if (time-lastDepartureTimeSerialGroupMap[group] >= lineFixedHeadway) {
-                    if (group == 0) {
-//                        std::cout << "dispatch time is:" << time << ", ";
-//                        std::cout << time;
-                    }
-                    dispatchOneToLink(group);
-                    lastDepartureTimeSerialGroupMap[group] = time;
-                }
+        int next_grp = serialGroups[(lastDispatchGroup+1) % grp_total];
+        while (!serialGroupQueues[next_grp].empty()) {
+            if (time-lastDepartureTimeSerialGroupMap[next_grp] >= lineFixedHeadway) {
+                dispatchOneToLink(next_grp);
+                lastDispatchGroup = (lastDispatchGroup+1) % grp_total;
+                lastDepartureTimeSerialGroupMap[next_grp] = time;
+                // check if can dispatch next group immediately
+                next_grp = (lastDispatchGroup+1) % grp_total;
+            }else{
+                break;
             }
         }
-        
-//        int grp_total = (int)serialGroups.size();
-//        int next_grp = serialGroups[(lastDispatchGroup+1) % grp_total];
-//        while (!serialGroupQueues[next_grp].empty()) {
-//            if (time-lastDepartureTimeSerialGroupMap[next_grp] >= lineFixedHeadway) {
-//                dispatchOneToLink(next_grp);
-//                lastDispatchGroup = (lastDispatchGroup+1) % grp_total;
-//                lastDepartureTimeSerialGroupMap[next_grp] = time;
-//                // check if can dispatch next group immediately
-//                next_grp = (lastDispatchGroup+1) % grp_total;
-//            }else{
-//                break;
-//            }
-//        }
     }else{ // strategy == 2
         // ...
         int grp_total = (int)serialGroups.size();
@@ -293,13 +267,9 @@ void BusGenerator::updateBusStats(){
 //    }
     if (dispatchMode == DispatchMode::Normal || dispatchMode == DispatchMode::SerialFixHeadway) {
         for (auto grp: serialGroups){
-//            if (grp == 0) {
-//                std::cout << serialGroupQueues[grp].size() << std::endl;
-//            }
             for (auto &bus: serialGroupQueues[grp]){
                 if (bus->isPeak) {
                     bus->delayAtEachStop[-1] += 1.0;
-//                    std::cout << bus->busID << "is:" << bus->delayAtEachStop[-1] << std::endl;
                 }
             }
         }

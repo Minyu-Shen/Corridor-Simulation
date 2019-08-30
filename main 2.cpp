@@ -82,17 +82,17 @@ void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, do
 //    std::vector<double> stopBunchingRMSE (stopSize);// arrival headway deviation
 //    std::vector<double> stopDepartureRMSE (stopSize); // departure headway deviation
     std::vector<double> stopExitDelays (stopSize); std::vector<double> stopEntryDelays (stopSize);
-    std::vector<double> arrivalHeadwayMean (stopSize); std::vector<double> entryHeadwayMean (stopSize);
-    std::vector<double> arrivalHeadwayCv (stopSize); std::vector<double> entryHeadwayCv (stopSize);
+    std::vector<double> arrivalHeadwayMean (stopSize); std::vector<double> departureHeadwayMean (stopSize);
+    std::vector<double> arrivalHeadwayCv (stopSize); std::vector<double> departureHeadwayCv (stopSize);
     
     // compute the mean of all the buses in one simulation round
     computeMeanDelay(stopDelays, meanDwellTimes, cvDwellTimes, stopEntryDelays, stopExitDelays, stopPaxNos, simulator.busGenerator->peakBusVec);
     /* bunching RMSE estimations */
 //    calculateBunchingRMSE(stopBunchingRMSE, stopDepartureRMSE, simulator.busGenerator->peakBusVec, 3600.0 / config.meanHeadway);
-    calculateHeadwayVariation(config.kLine, arrivalHeadwayMean, arrivalHeadwayCv, entryHeadwayMean, entryHeadwayCv, simulator.busGenerator->peakBusVec);
+    calculateHeadwayVariation(arrivalHeadwayMean, arrivalHeadwayCv, departureHeadwayMean, departureHeadwayCv, simulator.busGenerator->peakBusVec);
     
-    if (objective == 0) stats->updateNormal(stopDelays, meanDwellTimes, stopEntryDelays, stopExitDelays, stopPaxNos, arrivalHeadwayCv, entryHeadwayCv);
-    else stats->updateCorr(meanDwellTimes, cvDwellTimes, arrivalHeadwayMean, arrivalHeadwayCv, entryHeadwayMean, entryHeadwayCv, stopDelays);
+    if (objective == 0) stats->updateNormal(stopDelays, meanDwellTimes, stopEntryDelays, stopExitDelays, stopPaxNos, arrivalHeadwayCv);
+    else stats->updateCorr(meanDwellTimes, cvDwellTimes, arrivalHeadwayMean, arrivalHeadwayCv, departureHeadwayMean, departureHeadwayCv, stopDelays);
     
     if (isTest) {
         estimatingRunsMap.insert(std::make_pair(r, stopDelays));
