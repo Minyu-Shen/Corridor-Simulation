@@ -36,7 +36,7 @@ void normal(int argc, char *argv[], int objective){
     auto stats = std::make_shared<Stats>(objective, stopSize);
     
     /* ---------- test runs ---------- */
-    double testRuns = 200; //200
+    int testRuns = std::stoi(argv[16]);; //200
     
     // key is sample no, vector contains the sampels
     // to determine the needed simulation rounds
