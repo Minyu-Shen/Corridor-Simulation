@@ -232,7 +232,7 @@ int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap){
 //    return maxRuns;
 }
 
-void computeMeanDelay(vd &stopDelays, vd &meanDwellTimes, vd &cvDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs){
+void computeMeanDelay(vd &stopDelays, vd &stopDelayCvs, vd &meanDwellTimes, vd &cvDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs){
     
     
     int stopSize = int(meanDwellTimes.size());
@@ -259,14 +259,14 @@ void computeMeanDelay(vd &stopDelays, vd &meanDwellTimes, vd &cvDwellTimes, vd &
         meanDwellTimes[s] = calMean(dwellArrayEachStop);
         cvDwellTimes[s] = double(sqrt(calVariance(dwellArrayEachStop)) / meanDwellTimes[s]);
         stopDelays[s] = calMean(delaysArrayEachStop);
-        
+        stopDelayCvs[s] = sqrt(calVariance(delaysArrayEachStop)) / stopDelays[s];
 //        serviceSumsMap.insert(std::make_pair(s, stopDelays));
     }
     // colllecting ordering delays ...
     std::vector<double> delaysArrayAtOrdering;
     for (auto &bus: busPtrs) delaysArrayAtOrdering.push_back(bus->delayAtEachStop[-1]);
     stopDelays[stopSize] = calMean(delaysArrayAtOrdering);
-    
+    stopDelayCvs[stopSize] = sqrt(calVariance(delaysArrayAtOrdering)) / stopDelays[stopSize];
     
     for (auto &bus: busPtrs){
         for (int s = 0; s < stopSize; s++) {
@@ -379,24 +379,24 @@ void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map){
 //    }
 //}
 
-void calculateHeadwayVariation(int kLine, vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &entryHeadwayMean, vd &entryHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs){
+void calculateHeadwayVariation(int kLine, vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &entryHeadwayMean, vd &entryHeadwayCv, vd &departureHeadwayMean, vd &departureHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs){
     // first calculate the actual arrival headway
     // i.e., h_{n,s} = a_{n,s} - a_{n-1,s}
-    int stopSize = int(arrivalHeadwayMean.size());
+    int stopSize = int(entryHeadwayMean.size());
 //    double headway = 3600/busFlow; //in seconds
     
     for (int s = 0; s < stopSize; s++) {
-        std::vector<double> lineTotalHdwMeans;
-        std::vector<double> lineTotalHdwVars;
-//        std::vector<double> lineTotalDptHdwMeans;
-//        std::vector<double> lineTotalDptHdwVars;
+        std::vector<double> lineTotalArrHdwMeans;
+        std::vector<double> lineTotalArrHdwVars;
+        std::vector<double> lineTotalDptHdwMeans;
+        std::vector<double> lineTotalDptHdwVars;
         std::vector<double> lineTotalEntryHdwMeans;
         std::vector<double> lineTotalEntryHdwVars;
         
         for (int kl = 0; kl < kLine; kl++) {
             std::vector<double> actualArrivals;
             std::vector<double> actualEntries;
-//            std::vector<double> actualDeparts;
+            std::vector<double> actualDeparts;
             for (auto &bus: busPtrs){
                 // calculate one specific line's arrival headway
                 if (bus->busLine == kl) {
@@ -406,28 +406,28 @@ void calculateHeadwayVariation(int kLine, vd &arrivalHeadwayMean, vd &arrivalHea
                     if (bus->entryTimeEachStop[s] > 0) {
                         actualEntries.push_back(bus->entryTimeEachStop[s]);
                     }
-//                    if (bus->departureTimeEachStop[s] > 0) {
-//                        actualDeparts.push_back(bus->departureTimeEachStop[s]);
-//                    }
+                    if (bus->departureTimeEachStop[s] > 0) {
+                        actualDeparts.push_back(bus->departureTimeEachStop[s]);
+                    }
                 }
             }
             auto arrivalResults = calHeadwayStatsFromTimes(actualArrivals);
-            lineTotalHdwMeans.push_back(arrivalResults.first);
-            lineTotalHdwVars.push_back(arrivalResults.second);
+            lineTotalArrHdwMeans.push_back(arrivalResults.first);
+            lineTotalArrHdwVars.push_back(arrivalResults.second);
             auto entryResults = calHeadwayStatsFromTimes(actualEntries);
             lineTotalEntryHdwMeans.push_back(entryResults.first);
             lineTotalEntryHdwVars.push_back(entryResults.second);
-//            auto departResults = calHeadwayStatsFromTimes(actualDeparts);
-//            lineTotalDptHdwMeans.push_back(departResults.first);
-//            lineTotalDptHdwVars.push_back(departResults.second);
+            auto departResults = calHeadwayStatsFromTimes(actualDeparts);
+            lineTotalDptHdwMeans.push_back(departResults.first);
+            lineTotalDptHdwVars.push_back(departResults.second);
         }
         // take the average
-        arrivalHeadwayMean[s] = calMean(lineTotalHdwMeans);
-        arrivalHeadwayCv[s] = calMean(lineTotalHdwVars);
+        arrivalHeadwayMean[s] = calMean(lineTotalArrHdwMeans);
+        arrivalHeadwayCv[s] = calMean(lineTotalArrHdwVars);
         entryHeadwayMean[s] = calMean(lineTotalEntryHdwMeans);
         entryHeadwayCv[s] = calMean(lineTotalEntryHdwVars);
-//        departHeadwayMean[s] = calMean(lineTotalDptHdwMeans);
-//        departHeadwayCv[s] = calMean(lineTotalDptHdwVars);
+        departureHeadwayMean[s] = calMean(lineTotalDptHdwMeans);
+        departureHeadwayCv[s] = calMean(lineTotalDptHdwVars);
     }
 }
 

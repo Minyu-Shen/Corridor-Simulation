@@ -45,7 +45,7 @@ private:
 public:
     
     // constructor
-    Queues(const std::map<int, double> dms, ArrivalMode arrMode = ArrivalMode::Constant, double gcv=0.3);
+    Queues(const std::map<int, double> dms, ArrivalMode arrMode = ArrivalMode::Poisson, double gcv=0.3);
     
     // add x items to the queue indexed by id
     void increase(int id, double x);

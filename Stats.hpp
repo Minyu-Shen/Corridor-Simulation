@@ -17,22 +17,17 @@ public:
 
     int stopSize;
     
-    // for all
     vd meanDwellTime;
     vd totalDelay;
-    vd arrivalHeadwayCv;
-    
-    // for normal case
-    vd bunchingRMSE;
+    vd totalDelayCv;
     vd entryDelay;
     vd exitDelay;
     vd paxNo;
-    vd entryHeadwayCv;
-    
-    // for corr case
     vd cvDwellTime;
+    vd entryHeadwayMean;
+    vd entryHeadwayCv;
     vd arrivalHeadwayMean;
-    
+    vd arrivalHeadwayCv;
     vd departHeadwayMean;
     vd departHeadwayCv;
     
@@ -41,8 +36,8 @@ public:
     
     // method:
     // update stats
-    void updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, vd &arrivalHeadwayCvs, vd &stopEntryCv);
-    void updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs, vd &stopDelays);
+    void updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, vd &stopEntryCv);
+    void updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &entryHeadwayMeans, vd &entryHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs, vd &stopDelays, vd &stopDelayCvs);
     // unit conversion
     void convertUnit(int totalRuns, int objective);
     

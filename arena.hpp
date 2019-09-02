@@ -74,7 +74,7 @@ double calVariance(const std::vector<double> &vec);
 // calculate number runs needed
 int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap);
 
-void computeMeanDelay(vd &stopDelays, vd &meanDwellTimes, vd &cvDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs);
+void computeMeanDelay(vd &stopDelays, vd &stopDelayCvs, vd &meanDwellTimes, vd &cvDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs);
 
 void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map);
 
@@ -83,7 +83,7 @@ void getMapFromStringFlow(std::stringstream &ss, std::map<int, double> &map);
 
 //void calculateBunchingRMSE(vd &stopRMSE, vd &stopDepartureRMSE, std::vector<std::shared_ptr<Bus>> busPtrs, double busFlow);
 
-void calculateHeadwayVariation(int kLine, vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &departHeadwayMean, vd &departHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs);
+void calculateHeadwayVariation(int kLine, vd &arrivalHeadwayMean, vd &arrivalHeadwayCv, vd &entryHeadwayMean, vd &entryHeadwayCv, vd &departureHeadwayMean, vd &departureHeadwayCv, std::vector<std::shared_ptr<Bus>> busPtrs);
 
 std::pair<double, double> calHeadwayStatsFromTimes(vd &times);
 

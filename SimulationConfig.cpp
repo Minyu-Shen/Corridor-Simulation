@@ -157,7 +157,12 @@ Corridor SimulationConfig::CorridorBuilder(SimulationConfig config){
         // link number is equal to stop number
         std::vector<std::shared_ptr<Link>> links(config.kStop);
         for (int i = 0; i < config.kStop; i++) {
-            links[i] = std::make_shared<Link> (i, config.travelMean, config.travelStd, true);
+            if (i == 0) {
+                links[i] = std::make_shared<Link> (i, config.travelMean, 0, true); // the first link has no travel time variation
+            } else{
+                links[i] = std::make_shared<Link> (i, config.travelMean, config.travelStd, true);
+            }
+            
         }
         // connect bus generator with the first link, and links with stops
         bg->nextLink = links[0];
@@ -185,7 +190,11 @@ Corridor SimulationConfig::CorridorBuilder(SimulationConfig config){
         // link number is equal to stop number
         std::vector<std::shared_ptr<Link>> links(config.kStop);
         for (int i = 0; i < config.kStop; i++) {
-            links[i] = std::make_shared<Link> (i, config.travelMean, config.travelStd, false);
+            if (i == 0) {
+                links[i] = std::make_shared<Link> (i, config.travelMean, 0, false); // the first link has no travel time variation
+            } else{
+                links[i] = std::make_shared<Link> (i, config.travelMean, config.travelStd, false);
+            }
         }
         // connect bus generator with the first link, and links with stops
         bg->nextLink = links[0];
