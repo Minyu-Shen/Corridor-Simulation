@@ -232,7 +232,7 @@ int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap){
 //    return maxRuns;
 }
 
-void computeMeanDelay(vd &stopDelays, vd &stopDelayCvs, vd &meanDwellTimes, vd &cvDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs){
+void computeMeanDelay(vd &stopDelays, vd &stopDelayStds, vd &meanDwellTimes, vd &cvDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, std::vector<std::shared_ptr<Bus>> busPtrs){
     
     
     int stopSize = int(meanDwellTimes.size());
@@ -259,14 +259,15 @@ void computeMeanDelay(vd &stopDelays, vd &stopDelayCvs, vd &meanDwellTimes, vd &
         meanDwellTimes[s] = calMean(dwellArrayEachStop);
         cvDwellTimes[s] = double(sqrt(calVariance(dwellArrayEachStop)) / meanDwellTimes[s]);
         stopDelays[s] = calMean(delaysArrayEachStop);
-        stopDelayCvs[s] = sqrt(calVariance(delaysArrayEachStop)) / stopDelays[s];
+        stopDelayStds[s] = sqrt(calVariance(delaysArrayEachStop));
+        
 //        serviceSumsMap.insert(std::make_pair(s, stopDelays));
     }
     // colllecting ordering delays ...
     std::vector<double> delaysArrayAtOrdering;
     for (auto &bus: busPtrs) delaysArrayAtOrdering.push_back(bus->delayAtEachStop[-1]);
     stopDelays[stopSize] = calMean(delaysArrayAtOrdering);
-    stopDelayCvs[stopSize] = sqrt(calVariance(delaysArrayAtOrdering)) / stopDelays[stopSize];
+    stopDelayStds[stopSize] = 0.0; // no need, just set to 0
     
     for (auto &bus: busPtrs){
         for (int s = 0; s < stopSize; s++) {

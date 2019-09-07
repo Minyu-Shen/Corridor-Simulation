@@ -19,7 +19,7 @@ public:
     
     vd meanDwellTime;
     vd totalDelay;
-    vd totalDelayCv;
+    vd totalDelayStd;
     vd entryDelay;
     vd exitDelay;
     vd paxNo;
@@ -37,7 +37,7 @@ public:
     // method:
     // update stats
     void updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays, vd &stopExitDelays, vd &stopPaxNos, vd &stopEntryCv);
-    void updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &entryHeadwayMeans, vd &entryHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs, vd &stopDelays, vd &stopDelayCvs);
+    void updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &entryHeadwayMeans, vd &entryHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs, vd &stopDelays, vd &stopDelayStds);
     // unit conversion
     void convertUnit(int totalRuns, int objective);
     

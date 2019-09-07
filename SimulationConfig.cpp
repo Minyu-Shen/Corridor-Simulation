@@ -191,7 +191,7 @@ Corridor SimulationConfig::CorridorBuilder(SimulationConfig config){
         std::vector<std::shared_ptr<Link>> links(config.kStop);
         for (int i = 0; i < config.kStop; i++) {
             if (i == 0) {
-                links[i] = std::make_shared<Link> (i, config.travelMean, 0, false); // the first link has no travel time variation
+                links[i] = std::make_shared<Link> (i, config.travelMean, 0, false); // whether the first link has variation?
             } else{
                 links[i] = std::make_shared<Link> (i, config.travelMean, config.travelStd, false);
             }

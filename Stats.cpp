@@ -12,7 +12,7 @@
 Stats::Stats(int objective, int stpSize){
     stopSize = stpSize;
     totalDelay = vd (stopSize+1);
-    totalDelayCv = vd (stopSize+1);
+    totalDelayStd = vd (stopSize+1);
     arrivalHeadwayCv = vd (stopSize);
     entryHeadwayMean = vd (stopSize);
     entryHeadwayCv = vd (stopSize);
@@ -40,7 +40,7 @@ void Stats::updateNormal(vd &stopDelays, vd &meanDwellTimes, vd &stopEntryDelays
     addVector(entryHeadwayCv, stopEntryCv);
 }
 
-void Stats::updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &entryHeadwayMeans, vd &entryHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs, vd &stopDelays, vd &stopDelayCvs){
+void Stats::updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayMeans, vd &arrivalHeadwayCvs, vd &entryHeadwayMeans, vd &entryHeadwayCvs, vd &departHeadwayMeans, vd &departHeadwayCvs, vd &stopDelays, vd &stopDelayStds){
     addVector(meanDwellTime, meanDwellTimes);
     addVector(cvDwellTime, cvDwellTimes);
     addVector(arrivalHeadwayMean, arrivalHeadwayMeans);
@@ -50,7 +50,7 @@ void Stats::updateCorr(vd &meanDwellTimes, vd &cvDwellTimes, vd &arrivalHeadwayM
     addVector(departHeadwayMean, departHeadwayMeans);
     addVector(departHeadwayCv, departHeadwayCvs);
     addVector(totalDelay, stopDelays);
-    addVector(totalDelayCv, stopDelayCvs);
+    addVector(totalDelayStd, stopDelayStds);
 }
 
 void Stats::convertUnit(int totalRuns, int objective){
@@ -73,7 +73,7 @@ void Stats::convertUnit(int totalRuns, int objective){
         multiplyVector(departHeadwayMean, 1.0/60.0/totalRuns);
         multiplyVector(departHeadwayCv, 1.0/totalRuns);
         multiplyVector(totalDelay, 1.0/60.0/totalRuns);
-        multiplyVector(totalDelayCv, 1.0/totalRuns);
+        multiplyVector(totalDelayStd, 1.0/totalRuns);
     }
 }
 
@@ -114,7 +114,7 @@ void Stats::printToPython(int argc, char * argv[], int objective){
             for(int i = 1; i < argc; ++i) std::cout << argv[i] << " ";
             std::cout << s << " ";
             if (s != 0) {
-                std::cout << meanDwellTime[s-1] << " " << cvDwellTime[s-1] << " " << arrivalHeadwayMean[s-1] << " " << arrivalHeadwayCv[s-1] << " " << entryHeadwayMean[s-1] << " " << entryHeadwayCv[s-1] << " " << departHeadwayMean[s-1] << " " <<  departHeadwayCv[s-1] << " " << totalDelay[s-1] << " " << totalDelayCv[s-1] << std::endl;
+                std::cout << meanDwellTime[s-1] << " " << cvDwellTime[s-1] << " " << arrivalHeadwayMean[s-1] << " " << arrivalHeadwayCv[s-1] << " " << entryHeadwayMean[s-1] << " " << entryHeadwayCv[s-1] << " " << departHeadwayMean[s-1] << " " <<  departHeadwayCv[s-1] << " " << totalDelay[s-1] << " " << totalDelayStd[s-1] << std::endl;
             }else{
                 std::cout << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " <<  0.0 << " " <<  0.0 << " " <<  0.0 << " " <<  0.0 << " " <<  0.0 << std::endl; // for now, all the consolidation indicators are set to be 0.0, because correlation analysis does not need
             }
