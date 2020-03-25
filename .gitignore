@@ -6,6 +6,6 @@
 !*.hpp
 !*.cpp
 !*.html
-!run.py
+!run_exp.py
 !makefile
 !.gitignore
