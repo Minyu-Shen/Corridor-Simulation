@@ -1,4 +1,4 @@
-#Corridor Simulation
+# Corridor Simulation
 
 This repository contains the simulation program for the paper titled "Bus Holding Strtegies for Busy Bus Corridor". The simulation logic is implemented by C++; you can use the makefile to compile. After the compilation, you can call the python script (i.e., run_exp.py) to run the experiments and reproduce the results presented in the paper.
 
