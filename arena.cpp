@@ -183,9 +183,11 @@ double calVariance(const std::vector<double> &vec){
     if (vec.size() == 0) return 0.0;
     double meanSum = 0.0, squareMeanSum = 0.0;
     for(auto &x: vec){
+//        std::cout << "variance list is : " << x ;
         meanSum += x;
         squareMeanSum += (x*x);
     }
+//    std::cout << std::endl;
     double size = double(int(vec.size()));
     double mean = meanSum / size;
     return  squareMeanSum/size - mean*mean;
@@ -202,15 +204,35 @@ int computeRuns(std::map<int, std::vector<double>> estimatingRunsMap){
 //    int nruns = int(var/(0.2*mean));
 //    return nruns;
     
-    std::vector<double> totalDelayVec;
+    std::vector<double> totalIndicatorVec;
+    std::vector<double> largestIndicatorVec;
     for (auto &m: estimatingRunsMap){
         // total delay as indicator for repeating
         double sums = sumVector(m.second);
-        totalDelayVec.push_back(sums);
+        totalIndicatorVec.push_back(sums); // in minute
+//        std::cout << sums << std::endl;
+//        std::cout << m.second[m.second.size()-2] << std::endl;
+        largestIndicatorVec.push_back(m.second[m.second.size()-2]); // in minute
     }
-    double mean = sumVector(totalDelayVec) / (double)totalDelayVec.size();
-    double var = calVariance(totalDelayVec);
-    double nruns = sqrt(var) / (mean * 0.1); //0.02, 0.1
+//    double mean = sumVector(largestIndicatorVec) / (double)largestIndicatorVec.size();
+//    double var = calVariance(totalIndicatorVec);
+//    double var = calVariance(largestIndicatorVec);
+    
+//    double nruns = sqrt(var) / (mean * 0.02); //0.02, 0.1
+//    std::cout << "variance is : " << var << "" << std::endl;
+    
+    // delay case
+//    double parameter_delay = 0.001;
+//    double delay_nruns = var / parameter_delay;
+//    std::cout << "delay nruns is : " << delay_nruns << "" << std::endl;
+    
+    // cv case
+//    double parameter_cv = 0.005;
+//    double cv_nruns = var / parameter_cv;
+//    std::cout << "cv nruns is: " << cv_nruns << "" << std::endl;
+    
+//    nruns = var / 0.1;
+//    std::cout << nruns << std::endl;
 //    return (int)nruns;
     return -100;
     
@@ -464,6 +486,11 @@ std::pair<double, double> calHeadwayStatsFromTimes(vd &times){
 //    return std::make_pair(mean, stdvar);
 //}
 
+//void print_vector(std::vector<double> const &input){
+//    for (int i = 0; i < input.size(); i++) {
+//        std::cout << input.at(i) << ' ';
+//    }
+//}
 
 void writeJsonToFile(nlohmann::json js){
     std::string s = js.dump();

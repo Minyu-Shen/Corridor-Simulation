@@ -42,6 +42,8 @@ void normal(int argc, char *argv[], int objective){
     // to determine the needed simulation rounds
     std::map<int, std::vector<double>> estimatingRunsMap;
     
+//    std::cout << "testruns is : " << testRuns << "" << std::endl;
+    
     for (int r = 0; r < testRuns; r++) {
         oneRun(simulator, config, warmDuration, peakDuration, warmTotalPaxRate, stats, estimatingRunsMap, r, true, objective);
     }
@@ -95,7 +97,7 @@ void oneRun(Corridor simulator, SimulationConfig config, double warmDuration, do
     else stats->updateCorr(meanDwellTimes, cvDwellTimes, arrivalHeadwayMean, arrivalHeadwayCv, entryHeadwayMean, entryHeadwayCv, departureHeadwayMean, departureHeadwayCv, stopDelays, stopDelayStds);
     
     if (isTest) {
-        estimatingRunsMap.insert(std::make_pair(r, stopDelays));
+        estimatingRunsMap.insert(std::make_pair(r, entryHeadwayCv));
     }
     
 

@@ -87,5 +87,7 @@ void calculateHeadwayVariation(int kLine, vd &arrivalHeadwayMean, vd &arrivalHea
 
 std::pair<double, double> calHeadwayStatsFromTimes(vd &times);
 
+void print_vector(std::vector<double> const &input);
+
 void writeJsonToFile(nlohmann::json js);
 #endif /* arena_hpp */
