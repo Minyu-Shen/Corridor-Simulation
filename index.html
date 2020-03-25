@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<style>
+    .selected {
+        fill: red;
+        stroke: brown;
+    }
+</style>
+
+<!-- <svg width="1000" height="600" style="background: grey"></svg> -->
+<svg width="1000" height="600"></svg>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+let cavHeight = 600, cavWidth = 1600;
+let leftPadding = 50, rightPadding = 50;
+let canvas = d3.select("svg").attr("width", cavWidth).attr("height", cavHeight);
+let stopNo = 3, stopWidth = 100, stopHeight = 60, cslStopWidth = 120;
+let berthMargin = 3, berthNo = 3, lineNo = 3;
+let berthWidth = (stopWidth-(berthNo+1)*berthMargin)/berthNo;
+let berthHeight = 30;
+let linkWidth = (cavWidth - stopNo*stopWidth - leftPadding - rightPadding - cslStopWidth)/stopNo;
+let linkHeight = 60;
+let carWidth = berthWidth, carHeight = 25;
+let yPosition = 250;
+let linkLength = 1000; //actual link length
+let lineColors = ["#e74c3c", "#FAE433", "#1AAF54", "#1EB1ED", "#6504FF", "#C553FF"]; // red yellow green blue Indigo purple
+let convoyMargin = 30;
+
+// set the animation speed
+let speed = 1000 / 5.0; // 1000 is to transform ms to s, denominator is the *x speed
+
+// draw the links
+for (var i = 0; i < stopNo; i++) {
+    canvas.append("rect")
+        .attr("width", cavWidth-leftPadding-rightPadding-cslStopWidth).attr("height", linkHeight)
+        .attr("x", leftPadding+cslStopWidth).attr("y", yPosition)
+        .attr("fill", "#2c3e50")
+}
+// draw the stops
+// draw the consolidation stop
+canvas.append("rect")
+    .attr("width", cslStopWidth).attr("height", stopHeight)
+    .attr("x", leftPadding).attr("y", yPosition-(stopHeight-linkHeight)/2)
+    .attr("fill", "#e74c3c").attr("opacity", 0.7)
+    .attr("rx", 3).attr("ry",3) // rounded rect
+    .attr("stroke", "#ccc").attr("stroke-width", 3)
+//draw the normal stops
+for (var i = 0; i < stopNo; i++) {
+    canvas.append("rect")
+        .attr("width", stopWidth).attr("height", stopHeight)
+        .attr("x", leftPadding+cslStopWidth+(i+1)*linkWidth+i*stopWidth).attr("y", yPosition-(stopHeight-linkHeight)/2)
+        .attr("fill", "#1abc9c").attr("opacity", 0.7)
+        .attr("rx", 3).attr("ry",3) // rounded rect
+        .attr("stroke", "#ccc").attr("stroke-width", 3)
+}
+
+// draw the berths in each stop
+for (var i = 0; i < stopNo; i++) {
+    for (var j = 0; j < berthNo; j++) {
+        let x = leftPadding+cslStopWidth+(i+1)*linkWidth+i*stopWidth+j*berthWidth+(j+1)*berthMargin;
+        canvas.append("rect")
+            .attr("width", berthWidth).attr("height", berthHeight)
+            .attr("x", x)
+            .attr("y", yPosition+(linkHeight-berthHeight)/2)
+            .attr("fill", "#ffffff").attr("opacity", 0.5)
+            .attr("rx", 3).attr("ry",3) // rounded rect
+            .attr("stroke", "#ccc").attr("stroke-width", 3)
+    }
+}
+
+
+d3.json("data.json", function(err, data) {
+    // check whether the convoy or single berth case
+    // data["is_convoy"]
+    if (data["is_convoy"]){
+        lines = data["line_list"];
+        // draw the bus queues in the consolidation stop
+        let convoyData = data["convoys"];
+        for (var id in convoyData) {
+            var oneConvoy = sortStateByTime(convoyData[id]);
+            let beginTime = oneConvoy[0]["time"];
+            console.log("dispatch time : " + beginTime);
+            applyConvoyAnimation(oneConvoy, lines);
+        }
+    }else{ // single bus case
+        let busData = data["buses"];
+        for (var id in busData) {
+            var oneBus = sortStateByTime(busData[id]);
+            let beginTime = oneBus[0]["time"];
+            let line = oneBus[0]["state"]["line_no"];
+            console.log("dispatch time : " + beginTime);
+            applyBusAnimation(oneBus, line);
+        }
+    }
+
+    let busQueueData = data["bus_queues"];
+    for (var id in busQueueData){
+        var oneBusQueue = sortStateByTime(busQueueData[id]);
+        applyBusQueueAnimation(oneBusQueue, id);
+    }
+
+    let paxQueueData = data["pax_queues"];
+    for (var id in paxQueueData) {
+        var oneLine = sortStateByTime(paxQueueData[id]);
+        applyPaxQueueAnimation(oneLine, id);
+    }
+
+
+});
+
+
+function applyBusQueueAnimation (oneQueue, line){
+    // init ...
+    let consStartX = leftPadding;
+    let busAmount = oneQueue[0]["state"];
+    var queueCnv = canvas.append("rect")
+        .attr("height", busAmount*10).attr("width", 15)
+        .attr("x", consStartX + line*20).attr("y", yPosition-10)
+        .attr("fill", lineColors[line]).attr("rx", 3)
+
+    // init time label
+    timeCnvObj = canvas.append("text")
+        .text("0").attr("x", 50)
+        .attr("y", 50)
+        .attr("font-size", "40px")
+        .attr("fill", lineColors[0]);
+
+    // go animation ...
+    for (var i = 1; i < oneQueue.length; i++) {
+        busAmount = oneQueue[i]["state"];
+        queueCnv = queueCnv.transition()
+            .duration(1.0*speed)
+            .attr("height", busAmount*10)
+        timeCnvObj = timeCnvObj.transition()
+            .duration(1.0*speed)
+            timeCnvObj.text(i)
+    }
+
+}
+
+function applyPaxQueueAnimation (oneLine, line){
+    let stopDownY = yPosition + stopHeight;
+    // initialize the lineObjs, for each stop
+    lineCnvObjs = [];
+    for (var j = 0; j < stopNo; j++) { // for each stop
+        let pax = oneLine[0]["state"][j]; // pax for each stop
+        let stopX = leftPadding + cslStopWidth + j*stopWidth + (j+1)*linkWidth;
+        var lineCnvObj = canvas.append("rect")
+            .attr("width", pax*5).attr("height", 12)
+            .attr("x", stopX).attr("y", stopDownY+20*line)
+            .attr("fill", lineColors[line]).attr("rx", 3)
+        lineCnvObjs.push(lineCnvObj)
+    }
+
+    for (var i = 1; i < oneLine.length; i++) { // for each time step
+        let queues = oneLine[i]["state"];
+        for (var j = 0; j < stopNo; j++) { // for each stop
+            let stopX = leftPadding + cslStopWidth + j*stopWidth + (j+1)*linkWidth;
+            let pax = oneLine[i]["state"][j];
+            lineCnvObjs[j] = lineCnvObjs[j].transition()
+                .duration(1.0*speed)
+                .attr("width", pax*5)
+        }
+    }
+}
+
+
+
+function applyConvoyAnimation(oneConvoy, lines){
+    let beginTime = oneConvoy[0]["time"];
+    setTimeout(function(){
+        busesCnvObjs = [];
+        for (var b = 0; b < lines.length; b++) {
+            let yOffset = b*convoyMargin;
+            var busCnvObj = canvas.append("rect")
+                .attr("width", carWidth).attr("height", carHeight)
+                .attr("x", leftPadding+cslStopWidth).attr("y", yPosition+(linkHeight-carHeight)/2+yOffset)
+                .attr("fill", lineColors[lines[b]]).attr("opacity", 0.8)
+                .attr("rx", 2.5)
+            busesCnvObjs.push(busCnvObj);
+        }
+
+        for (var i = 1; i < oneConvoy.length; i++) {
+            let time = oneConvoy[i]["time"];
+            let stateOneFrame = oneConvoy[i]["state"];
+            let linkID = stateOneFrame["link_id"];
+            let stopID = stateOneFrame["stop_id"];
+            let linkStartX = leftPadding + cslStopWidth + linkID*(linkWidth+stopWidth);
+
+            if (linkID >= 0) {
+                let xOnLink = linkStartX + (stateOneFrame["position"]/linkLength)*linkWidth;
+                for (var b = 0; b < lines.length; b++) {
+                    let yOffset = b*convoyMargin; yOnLink = yPosition+(linkHeight-carHeight)/2+yOffset
+                    busesCnvObjs[b] = busesCnvObjs[b].transition()
+                    .duration(1.0*speed)
+                    .attr("x", xOnLink).attr("y", yOnLink)
+                    .attr("fill", lineColors[lines[b]]).attr("opacity", 0.8)
+                }
+            }else if (stopID >= 0) {
+                let stopX = leftPadding + cslStopWidth + stopID*stopWidth + (stopID+1)*linkWidth;
+                let isServ = stateOneFrame["is_serving"];
+                if (isServ) { // serving in the berths
+                    for (var b = 0; b < lines.length; b++) {
+                        let x = stopX + b*berthWidth+(b+1)*berthMargin;
+                        busesCnvObjs[b] = busesCnvObjs[b].transition()
+                        .duration(0.5*1.0*speed)
+                        .attr("opacity", 0.2)
+                        .attr("x", x).attr("y", yPosition+(linkHeight-carHeight)/2)
+                        .transition().duration(0.5*1.0*speed)
+                        .attr("opacity", 0.8)
+                    }
+                }else{ // in the waiting zone
+                    let qPos = stateOneFrame["wait_position"];
+                    for (var b = 0; b < lines.length; b++) {
+                        busesCnvObjs[b] = busesCnvObjs[b].transition().duration(1.0*speed)
+                        .attr("x", stopX - convoyMargin*b)
+                        .attr("y", yPosition-(qPos+1)*carHeight)
+                    }
+                }
+            }
+        }
+
+    }, beginTime*speed);
+}
+
+
+// apply the animation for each bus
+function applyBusAnimation(oneBus, line){
+    let beginTime = oneBus[0]["time"];
+    // put the bus on the cosolidation stop
+
+    setTimeout(function(){
+        var busCnvObj = canvas.append("rect")
+            .attr("width", carWidth).attr("height", carHeight)
+            .attr("x", leftPadding+cslStopWidth).attr("y", yPosition+(linkHeight-carHeight)/2)
+            .attr("fill", lineColors[line]).attr("opacity", 0.8)
+            .attr("rx", 2.5)
+
+        for (var i = 1; i < oneBus.length; i++) { // loop each time state, ordered by time
+            let time = oneBus[i]["time"];
+            let stateOneFrame = oneBus[i]["state"];
+            let linkID = stateOneFrame["link_id"];
+            let stopID = stateOneFrame["stop_id"];
+            // check if the bus is in the stops or links
+            if (linkID >= 0) { // on the link
+                let linkStartX = leftPadding + cslStopWidth + linkID*(linkWidth+stopWidth);
+                // move the bus one step further
+                let xOnLink = linkStartX + (stateOneFrame["position"]/linkLength) * linkWidth;
+                busCnvObj = busCnvObj.transition().duration(1.0*speed)
+                    .attr("x", xOnLink).attr("y", yPosition+(linkHeight-carHeight)/2)
+                    .attr("fill", lineColors[line]).attr("opacity", 0.8)
+            }else if (stopID >= 0) {
+                let c = stateOneFrame["berth_id"];
+                let stopX = leftPadding + cslStopWidth + stopID*stopWidth + (stopID+1)*linkWidth;
+
+                if (c < 0) { // is in the waitingZone
+                    // show the bus in the waitZone (above the stop)
+                    let qPos = stateOneFrame["wait_position"];
+                    busCnvObj = busCnvObj.transition()
+                        .duration(1.0*speed)
+                        .attr("y", yPosition-(qPos+1)*carHeight)
+                }else{ // in the berth
+                    // console.log("in berth time" + time);
+                    let x = stopX + c*berthWidth+(c+1)*berthMargin;
+                    if (stateOneFrame["is_serving"]) {
+                        busCnvObj = busCnvObj.transition()
+                            .duration(0.5*1.0*speed)
+                            .attr("opacity", 0.2)
+                            .attr("x", x).attr("y", yPosition+(linkHeight-carHeight)/2)
+                            .transition().duration(0.5*1.0*speed)
+                            .attr("opacity", 0.8)
+                    }else{ // is not serving, blocked
+                        busCnvObj = busCnvObj.transition()
+                            .duration(1.0*speed)
+                            .attr("fill", "black")
+                            .attr("x", x)
+                            .attr("y", yPosition+(linkHeight-carHeight)/2)
+                    }
+                    // for single berth only, for corridor, pls comment it!!!
+                    if (i == oneBus.length-1){
+                        busCnvObj.remove()
+                    }
+
+                }
+            }else{ alert("neither on link nor in stop, wrong!")}
+        }
+    }, beginTime*speed);
+}
+
+
+
+
+// sort each bus state by time
+// return type is like: {time:5.0, state{aa:aa, bb:bb}}
+function sortStateByTime(stateOneFrame){
+    var sort_array = [];
+    for (var key in stateOneFrame){
+        sort_array.push({time:key, state:stateOneFrame[key]})
+    }
+    sort_array.sort(function(x,y){return x.time - y.time});
+    return sort_array
+}
+
+
+</script>
